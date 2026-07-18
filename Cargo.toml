@@ -1,0 +1,11 @@
+[package]
+name = "terracotta"
+version = "0.1.0"
+edition = "2024"
+
+[features]
+default = []
+builtin_parsers = []
+digits_parser = ["builtin_parsers"]
+
+[dependencies]
