@@ -158,6 +158,14 @@ impl<'input, Context> Parser<'input, Context> {
             SoftParseResult::Success(text)
         }
     }
+
+    #[inline]
+    pub fn take_until<F>(&mut self, mut predicate: F) -> SoftParseResult<&'input str>
+    where
+        F: FnMut(char) -> bool,
+    {
+        self.take_while(|character| !predicate(character))
+    }
 }
 
 impl<'input> Parser<'input, ()> {
@@ -165,5 +173,32 @@ impl<'input> Parser<'input, ()> {
     #[must_use]
     pub const fn new(input: &'input str) -> Self {
         Self::new_with_context(input, ())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{parser::Parser, result::soft::SoftParseResult};
+
+    #[test]
+    fn parse_take_while() {
+        let mut parser = Parser::new("aaab");
+
+        assert_eq!(
+            parser.take_while(|character| character == 'a'),
+            SoftParseResult::Success("aaa")
+        );
+        assert_eq!(parser.remaining(), "b");
+    }
+
+    #[test]
+    fn parse_take_until() {
+        let mut parser = Parser::new("abcdef");
+
+        assert_eq!(
+            parser.take_until(|character| character == 'd'),
+            SoftParseResult::Success("abc")
+        );
+        assert_eq!(parser.remaining(), "def");
     }
 }

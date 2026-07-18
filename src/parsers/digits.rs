@@ -20,10 +20,13 @@ mod tests {
     #[test]
     fn parse() {
         assert_eq!(
-            "123".parse_standalone::<Digits>(),
+            "123".parse_standalone::<Digits>(false),
             ParseResult::Success(Digits("123"))
         );
 
-        assert_eq!("abc".parse_standalone::<Digits>(), ParseResult::SoftFailure);
+        assert_eq!(
+            "abc".parse_standalone::<Digits>(false),
+            ParseResult::SoftFailure
+        );
     }
 }

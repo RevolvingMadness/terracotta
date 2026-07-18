@@ -8,24 +8,34 @@ pub trait StrExt<'input> {
     fn parse_standalone_with_context<Context, T: Parsable<'input, Context>>(
         &self,
         context: Context,
+        allow_trailing: bool,
     ) -> ParseResult<T>;
 
-    fn parse_standalone<T: Parsable<'input, ()>>(&self) -> ParseResult<T>;
+    fn parse_standalone<T: Parsable<'input, ()>>(&self, allow_trailing: bool) -> ParseResult<T>;
 }
 
 impl<'input> StrExt<'input> for &'input str {
     fn parse_standalone_with_context<Context, T: Parsable<'input, Context>>(
         &self,
         context: Context,
+        allow_trailing: bool,
     ) -> ParseResult<T> {
         let mut parser = Parser::new_with_context(self, context);
 
-        T::parse(&mut parser)
+        let result = T::parse(&mut parser)?;
+
+        if !allow_trailing && !parser.remaining().is_empty() {
+            let failure = parser.add_error_with_length_one("Expected end of input".to_owned());
+
+            return ParseResult::HardFailure(failure);
+        }
+
+        ParseResult::Success(result)
     }
 
     #[inline]
-    fn parse_standalone<T: Parsable<'input, ()>>(&self) -> ParseResult<T> {
-        self.parse_standalone_with_context(())
+    fn parse_standalone<T: Parsable<'input, ()>>(&self, allow_trailing: bool) -> ParseResult<T> {
+        self.parse_standalone_with_context((), allow_trailing)
     }
 }
 
