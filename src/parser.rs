@@ -16,13 +16,25 @@ pub struct FullParseResult<Context, Output> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct ParserPosition(usize);
+pub struct ParserPosition(pub(crate) usize);
 
 impl ParserPosition {
     #[inline]
     #[must_use]
     pub const fn into_inner(self) -> usize {
         self.0
+    }
+
+    #[inline]
+    #[must_use]
+    pub const fn distance_between_self_and(self, other: Self) -> usize {
+        other.0.abs_diff(self.0)
+    }
+
+    #[inline]
+    #[must_use]
+    pub const fn span(self, other: Self) -> Span {
+        Span::new(self, other)
     }
 }
 
@@ -64,13 +76,13 @@ impl<'input, Context> Parser<'input, Context> {
 
     #[inline]
     pub fn expect<P: Parsable<'input, Context>>(&mut self) -> HardParseResult<P::Output> {
-        self.expect_named::<P>(|| P::NAME.to_owned())
+        self.expect_named::<P>(P::NAME)
     }
 
     #[inline]
     pub fn expect_named<P: Parsable<'input, Context>>(
         &mut self,
-        expected: impl FnOnce() -> String,
+        expected: &str,
     ) -> HardParseResult<P::Output> {
         P::expect_named(self, expected)
     }
@@ -104,7 +116,10 @@ impl<'input, Context> Parser<'input, Context> {
 
     #[inline]
     pub fn add_error_with_length_one(&mut self, message: String) -> HardParseFailure {
-        self.add_error(self.position..self.position + 1, message)
+        self.add_error(
+            ParserPosition(self.position)..ParserPosition(self.position + 1),
+            message,
+        )
     }
 
     #[inline]
@@ -128,7 +143,7 @@ impl<'input, Context> Parser<'input, Context> {
     }
 
     #[inline]
-    pub fn advance_char(&mut self) {
+    pub fn advance(&mut self) {
         let Some(character) = self.peek() else {
             return;
         };
@@ -149,18 +164,23 @@ impl<'input, Context> Parser<'input, Context> {
     }
 
     #[inline]
-    pub const fn advance(&mut self) {
-        self.position += 1;
-    }
-
-    #[inline]
-    pub const fn advance_len(&mut self, len: usize) {
+    pub const fn advance_len_unchecked(&mut self, len: usize) {
         self.position += len;
     }
 
     #[inline]
+    pub const fn advance_char(&mut self, character: char) {
+        self.position += character.len_utf8();
+    }
+
+    #[inline]
+    pub const fn advance_str(&mut self, str: &str) {
+        self.position += str.len();
+    }
+
+    #[inline]
     #[must_use]
-    pub const fn mark(&self) -> ParserPosition {
+    pub const fn position(&self) -> ParserPosition {
         ParserPosition(self.position)
     }
 
@@ -171,8 +191,26 @@ impl<'input, Context> Parser<'input, Context> {
 
     #[inline]
     #[must_use]
+    pub fn slice(
+        &self,
+        Span {
+            start: ParserPosition(start),
+            end: ParserPosition(end),
+        }: Span,
+    ) -> &'input str {
+        &self.input[start..end]
+    }
+
+    #[inline]
+    #[must_use]
     pub fn slice_from(&self, ParserPosition(position): ParserPosition) -> &'input str {
         &self.input[position..self.position]
+    }
+
+    #[inline]
+    #[must_use]
+    pub fn slice_to(&self, ParserPosition(position): ParserPosition) -> &'input str {
+        &self.input[self.position..position]
     }
 }
 
@@ -181,7 +219,7 @@ impl<'input, Context> Parser<'input, Context> {
     where
         F: FnMut(char) -> bool,
     {
-        let start = self.mark();
+        let start = self.position();
 
         while let Some(character) = self.peek() {
             if !predicate(character) {

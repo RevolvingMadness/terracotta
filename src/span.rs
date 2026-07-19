@@ -1,68 +1,102 @@
 use std::ops::{Bound, Range, RangeBounds};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+use crate::parser::ParserPosition;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Span {
-    start: usize,
-    end: usize,
+    pub(crate) start: ParserPosition,
+    pub(crate) end: ParserPosition,
 }
 
-impl From<Span> for Range<usize> {
-    fn from(value: Span) -> Self {
-        value.start..value.end
+impl From<Span> for Range<ParserPosition> {
+    fn from(Span { start, end }: Span) -> Self {
+        start..end
     }
 }
 
-impl From<Range<usize>> for Span {
-    fn from(value: Range<usize>) -> Self {
-        Self {
-            start: value.start,
-            end: value.end,
-        }
+impl From<Span> for Range<usize> {
+    fn from(Span { start, end }: Span) -> Self {
+        start.0..end.0
+    }
+}
+
+impl From<Range<ParserPosition>> for Span {
+    fn from(Range { start, end }: Range<ParserPosition>) -> Self {
+        Self { start, end }
+    }
+}
+
+impl RangeBounds<ParserPosition> for Span {
+    fn start_bound(&self) -> Bound<&ParserPosition> {
+        Bound::Included(&self.start)
+    }
+
+    fn end_bound(&self) -> Bound<&ParserPosition> {
+        Bound::Excluded(&self.end)
     }
 }
 
 impl RangeBounds<usize> for Span {
     fn start_bound(&self) -> Bound<&usize> {
-        Bound::Included(&self.start)
+        Bound::Included(&self.start.0)
     }
 
     fn end_bound(&self) -> Bound<&usize> {
-        Bound::Excluded(&self.end)
+        Bound::Excluded(&self.end.0)
     }
 }
 
 impl Span {
-    #[inline]
     #[must_use]
-    pub const fn new(start: usize, end: usize) -> Option<Self> {
-        if start > end {
-            return None;
+    pub const fn new(first: ParserPosition, second: ParserPosition) -> Self {
+        if first.0 > second.0 {
+            Self {
+                start: second,
+                end: first,
+            }
+        } else {
+            Self {
+                start: first,
+                end: second,
+            }
         }
-
-        Some(Self { start, end })
     }
 
     #[inline]
     #[must_use]
-    pub const fn start(&self) -> usize {
+    pub const fn start(&self) -> ParserPosition {
         self.start
     }
 
     #[inline]
     #[must_use]
-    pub const fn end(&self) -> usize {
+    pub const fn end(&self) -> ParserPosition {
         self.end
     }
 
     #[inline]
     #[must_use]
     pub const fn len(&self) -> usize {
-        self.end - self.start
+        self.start.distance_between_self_and(self.end)
     }
 
     #[inline]
     #[must_use]
     pub const fn is_empty(&self) -> bool {
-        self.end == self.start
+        self.end.0 == self.start.0
+    }
+
+    #[inline]
+    #[must_use]
+    pub const fn merge(mut self, other: ParserPosition) -> Self {
+        if other.0 > self.start.0 {
+            self.start = other;
+        }
+
+        if other.0 > self.end.0 {
+            self.end = other;
+        }
+
+        self
     }
 }

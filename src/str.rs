@@ -49,7 +49,7 @@ impl<Context> ParsableInstance<'_, Context> for &str {
             return Err(ParseFailure::Soft);
         }
 
-        parser.advance_len(self.len());
+        parser.advance_str(self);
 
         Ok(self)
     }

@@ -14,7 +14,7 @@ impl<Context> Parsable<'_, Context> for char {
             return Err(ParseFailure::Soft);
         };
 
-        parser.advance_len(character.len_utf8());
+        parser.advance_char(character);
 
         Ok(character)
     }
@@ -32,7 +32,7 @@ impl<Context> ParsableInstance<'_, Context> for char {
             return Err(ParseFailure::Soft);
         }
 
-        parser.advance_len(self.len_utf8());
+        parser.advance_char(*self);
 
         Ok(*self)
     }

@@ -24,8 +24,19 @@ impl HardParseFailure {
     pub const fn new_unchecked() -> Self {
         Self(())
     }
+
+    #[inline]
+    pub const fn into_parse_result<T>(self) -> ParseResult<T> {
+        Err(ParseFailure::Hard(self))
+    }
+
+    #[inline]
+    pub const fn into_hard_parse_result<T>(self) -> HardParseResult<T> {
+        Err(self)
+    }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum ParseFailure {
     Soft,
     Hard(HardParseFailure),
@@ -76,3 +87,16 @@ pub type SoftParseResult<T> = Result<T, SoftParseFailure>;
 pub type HardParseResult<T> = Result<T, HardParseFailure>;
 
 pub type OptionParseResult<T> = Result<Option<T>, HardParseFailure>;
+
+pub trait OptionTExt<T> {
+    fn into_parse_result(self) -> ParseResult<T>;
+}
+
+impl<T> OptionTExt<T> for Option<T> {
+    fn into_parse_result(self) -> ParseResult<T> {
+        match self {
+            Self::Some(value) => Ok(value),
+            Self::None => Err(ParseFailure::Soft),
+        }
+    }
+}
