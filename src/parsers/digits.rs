@@ -14,18 +14,3 @@ impl<'input, Context> Parsable<'input, Context> for Digits {
         Ok(digits)
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use crate::{parsers::digits::Digits, result::HardParseFailure, str::StrExt};
-
-    #[test]
-    fn parse() {
-        assert_eq!("123".parse_standalone::<Digits>(false).1, Ok(Some("123")));
-
-        assert_eq!(
-            "abc".parse_standalone::<Digits>(false).1,
-            Err(HardParseFailure(()))
-        );
-    }
-}

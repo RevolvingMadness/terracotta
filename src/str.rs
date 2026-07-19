@@ -1,7 +1,7 @@
 use crate::{
     parsable_traits::{Parsable, ParsableInstance},
-    parser::Parser,
-    result::{OptionParseResult, ParseFailure, ParseResult},
+    parser::{FullParseResult, Parser},
+    result::{ParseFailure, ParseResult},
 };
 
 pub trait StrExt<'input> {
@@ -9,12 +9,12 @@ pub trait StrExt<'input> {
         &self,
         context: Context,
         allow_trailing: bool,
-    ) -> (Parser<'input, Context>, OptionParseResult<P::Output>);
+    ) -> FullParseResult<Context, P::Output>;
 
     fn parse_standalone<P: Parsable<'input, ()>>(
         &self,
         allow_trailing: bool,
-    ) -> (Parser<'input, ()>, OptionParseResult<P::Output>);
+    ) -> FullParseResult<(), P::Output>;
 }
 
 impl<'input> StrExt<'input> for &'input str {
@@ -22,29 +22,17 @@ impl<'input> StrExt<'input> for &'input str {
         &self,
         context: Context,
         allow_trailing: bool,
-    ) -> (Parser<'input, Context>, OptionParseResult<P::Output>) {
-        let mut parser = Parser::new_with_context(self, context);
+    ) -> FullParseResult<Context, P::Output> {
+        let parser = Parser::new_with_context(self, context);
 
-        let result = P::try_parse(&mut parser);
-
-        let result = 'result: {
-            if !allow_trailing && !parser.remaining().is_empty() {
-                let failure = parser.add_error_with_length_one("Expected end of input".to_owned());
-
-                break 'result Err(failure);
-            }
-
-            result
-        };
-
-        (parser, result)
+        parser.parse_fully::<P>(allow_trailing)
     }
 
     #[inline]
     fn parse_standalone<P: Parsable<'input, ()>>(
         &self,
         allow_trailing: bool,
-    ) -> (Parser<'input, ()>, OptionParseResult<P::Output>) {
+    ) -> FullParseResult<(), P::Output> {
         self.parse_standalone_with_context::<_, P>((), allow_trailing)
     }
 }

@@ -1,8 +1,19 @@
 use crate::{
     parsable_traits::Parsable,
-    result::{HardParseFailure, HardParseResult, ParseResult, SoftParseFailure, SoftParseResult},
+    result::{
+        HardParseFailure, HardParseResult, OptionParseResult, ParseResult, SoftParseFailure,
+        SoftParseResult,
+    },
     span::Span,
 };
+
+#[derive(Debug)]
+pub struct FullParseResult<Context, Output> {
+    pub errors: Vec<ParseError>,
+    pub context: Context,
+
+    pub output: Option<Output>,
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ParserPosition(usize);
@@ -26,6 +37,7 @@ pub struct Parser<'input, Context = ()> {
     input: &'input str,
     position: usize,
     errors: Vec<ParseError>,
+
     pub context: Context,
 }
 
@@ -46,6 +58,11 @@ impl<'input, Context> Parser<'input, Context> {
     }
 
     #[inline]
+    pub fn try_parse<P: Parsable<'input, Context>>(&mut self) -> OptionParseResult<P::Output> {
+        P::try_parse(self)
+    }
+
+    #[inline]
     pub fn expect<P: Parsable<'input, Context>>(&mut self) -> HardParseResult<P::Output> {
         self.expect_named::<P>(|| P::NAME.to_owned())
     }
@@ -56,6 +73,25 @@ impl<'input, Context> Parser<'input, Context> {
         expected: impl FnOnce() -> String,
     ) -> HardParseResult<P::Output> {
         P::expect_named(self, expected)
+    }
+
+    pub fn parse_fully<P: Parsable<'input, Context>>(
+        mut self,
+        allow_trailing: bool,
+    ) -> FullParseResult<Context, P::Output> {
+        let result = self.try_parse::<P>();
+
+        if !allow_trailing && !self.remaining().is_empty() {
+            self.add_error_with_length_one("Expected end of input".to_owned());
+        }
+
+        let output = result.ok().flatten();
+
+        FullParseResult {
+            context: self.context,
+            errors: self.errors,
+            output,
+        }
     }
 
     pub fn add_error<S: Into<Span>>(&mut self, span: S, message: String) -> HardParseFailure {
