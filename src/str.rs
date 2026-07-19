@@ -1,56 +1,68 @@
 use crate::{
     parsable_traits::{Parsable, ParsableInstance},
     parser::Parser,
-    result::regular::ParseResult,
+    result::{hard::HardParseResult, regular::ParseResult},
 };
 
 pub trait StrExt<'input> {
-    fn parse_standalone_with_context<Context, T: Parsable<'input, Context>>(
+    fn parse_standalone_with_context<Context, P: Parsable<'input, Context>>(
         &self,
         context: Context,
         allow_trailing: bool,
-    ) -> ParseResult<T>;
+    ) -> (Parser<'input, Context>, HardParseResult<Option<P::Output>>);
 
-    fn parse_standalone<T: Parsable<'input, ()>>(&self, allow_trailing: bool) -> ParseResult<T>;
+    fn parse_standalone<P: Parsable<'input, ()>>(
+        &self,
+        allow_trailing: bool,
+    ) -> (Parser<'input, ()>, HardParseResult<Option<P::Output>>);
 }
 
 impl<'input> StrExt<'input> for &'input str {
-    fn parse_standalone_with_context<Context, T: Parsable<'input, Context>>(
+    fn parse_standalone_with_context<Context, P: Parsable<'input, Context>>(
         &self,
         context: Context,
         allow_trailing: bool,
-    ) -> ParseResult<T> {
+    ) -> (Parser<'input, Context>, HardParseResult<Option<P::Output>>) {
         let mut parser = Parser::new_with_context(self, context);
 
-        let result = T::parse(&mut parser)?;
+        let result = P::try_parse(&mut parser);
 
-        if !allow_trailing && !parser.remaining().is_empty() {
-            let failure = parser.add_error_with_length_one("Expected end of input".to_owned());
+        let result = 'result: {
+            if !allow_trailing && !parser.remaining().is_empty() {
+                let failure = parser.add_error_with_length_one("Expected end of input".to_owned());
 
-            return ParseResult::HardFailure(failure);
-        }
+                break 'result HardParseResult::Failure(failure);
+            }
 
-        ParseResult::Success(result)
+            result
+        };
+
+        (parser, result)
     }
 
     #[inline]
-    fn parse_standalone<T: Parsable<'input, ()>>(&self, allow_trailing: bool) -> ParseResult<T> {
-        self.parse_standalone_with_context((), allow_trailing)
+    fn parse_standalone<P: Parsable<'input, ()>>(
+        &self,
+        allow_trailing: bool,
+    ) -> (Parser<'input, ()>, HardParseResult<Option<P::Output>>) {
+        self.parse_standalone_with_context::<_, P>((), allow_trailing)
     }
 }
 
-impl<Context> ParsableInstance<'_, '_, Context> for &str {
+impl<Context> ParsableInstance<'_, Context> for &str {
+    type Output = Self;
+
     fn name(&self) -> String {
-        (*self).to_owned()
+        format!("`{}`", self)
     }
 
-    fn parse_instance(&self, parser: &mut Parser<'_, Context>) -> ParseResult<()> {
+    fn parse_instance(&self, parser: &mut Parser<'_, Context>) -> ParseResult<Self::Output> {
         if !parser.remaining().starts_with(self) {
             return ParseResult::SoftFailure;
         }
 
         parser.advance_len(self.len());
 
-        ParseResult::Success(())
+        ParseResult::Success(self)
     }
 }

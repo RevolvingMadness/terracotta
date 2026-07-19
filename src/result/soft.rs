@@ -1,12 +1,16 @@
-use std::{
-    convert::Infallible,
-    ops::{ControlFlow, FromResidual, Residual, Try},
-};
+use std::ops::{ControlFlow, FromResidual, Residual, Try};
 
 use crate::{
     parser::Parser,
     result::{hard::HardParseResult, regular::ParseResult},
 };
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct SoftParseFailure;
+
+impl<T> Residual<T> for SoftParseFailure {
+    type TryType = SoftParseResult<T>;
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[must_use]
@@ -15,16 +19,10 @@ pub enum SoftParseResult<T> {
     Failure,
 }
 
-pub(crate) type SoftParseResultResidual = SoftParseResult<Infallible>;
-
-impl<T> Residual<T> for SoftParseResultResidual {
-    type TryType = SoftParseResult<T>;
-}
-
 impl<T> Try for SoftParseResult<T> {
     type Output = T;
 
-    type Residual = SoftParseResultResidual;
+    type Residual = SoftParseFailure;
 
     fn from_output(output: Self::Output) -> Self {
         Self::Success(output)
@@ -33,26 +31,44 @@ impl<T> Try for SoftParseResult<T> {
     fn branch(self) -> ControlFlow<Self::Residual, Self::Output> {
         match self {
             Self::Success(value) => ControlFlow::Continue(value),
-            Self::Failure => ControlFlow::Break(SoftParseResult::Failure),
+            Self::Failure => ControlFlow::Break(SoftParseFailure),
         }
     }
 }
 
-impl<T> FromResidual<SoftParseResultResidual> for SoftParseResult<T> {
-    fn from_residual(residual: SoftParseResultResidual) -> Self {
-        match residual {
-            SoftParseResult::Success(..) => unreachable!(),
-            SoftParseResult::Failure => Self::Failure,
+impl<T> FromResidual for SoftParseResult<T> {
+    fn from_residual(SoftParseFailure: <Self as Try>::Residual) -> Self {
+        Self::Failure
+    }
+}
+
+impl<T> From<SoftParseResult<T>> for ParseResult<T> {
+    fn from(value: SoftParseResult<T>) -> Self {
+        match value {
+            SoftParseResult::Success(value) => Self::Success(value),
+            SoftParseResult::Failure => Self::SoftFailure,
+        }
+    }
+}
+
+impl<T> From<SoftParseResult<T>> for HardParseResult<Option<T>> {
+    fn from(value: SoftParseResult<T>) -> Self {
+        match value {
+            SoftParseResult::Success(value) => Self::Success(Some(value)),
+            SoftParseResult::Failure => Self::Success(None),
         }
     }
 }
 
 impl<T> SoftParseResult<T> {
+    #[inline]
     pub fn into_parse_result(self) -> ParseResult<T> {
-        match self {
-            Self::Success(value) => ParseResult::Success(value),
-            Self::Failure => ParseResult::SoftFailure,
-        }
+        self.into()
+    }
+
+    #[inline]
+    pub fn into_hard_option_parse_result(self) -> HardParseResult<Option<T>> {
+        self.into()
     }
 
     pub fn into_hard_parse_result<Context>(

@@ -1,17 +1,21 @@
 use crate::{
     parsable_traits::Parsable,
-    result::{hard::HardParseResult, regular::ParseResult, soft::SoftParseResult},
+    result::{
+        hard::{HardParseFailure, HardParseResult},
+        regular::ParseResult,
+        soft::SoftParseResult,
+    },
     span::Span,
 };
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct ParseFailure(pub(crate) ());
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct ParserPosition(usize);
 
-impl ParseFailure {
+impl ParserPosition {
     #[inline]
     #[must_use]
-    pub const fn new_unchecked() -> Self {
-        Self(())
+    pub const fn into_inner(self) -> usize {
+        self.0
     }
 }
 
@@ -41,33 +45,33 @@ impl<'input, Context> Parser<'input, Context> {
     }
 
     #[inline]
-    pub fn parse<T: Parsable<'input, Context>>(&mut self) -> ParseResult<T> {
-        T::parse(self)
+    pub fn parse<P: Parsable<'input, Context>>(&mut self) -> ParseResult<P::Output> {
+        P::parse(self)
     }
 
     #[inline]
-    pub fn expect<T: Parsable<'input, Context>>(&mut self) -> HardParseResult<T> {
-        self.expect_named::<T>(|| T::NAME.to_owned())
+    pub fn expect<P: Parsable<'input, Context>>(&mut self) -> HardParseResult<P::Output> {
+        self.expect_named::<P>(|| P::NAME.to_owned())
     }
 
     #[inline]
-    pub fn expect_named<T: Parsable<'input, Context>>(
+    pub fn expect_named<P: Parsable<'input, Context>>(
         &mut self,
         expected: impl FnOnce() -> String,
-    ) -> HardParseResult<T> {
-        T::expect_named(self, expected)
+    ) -> HardParseResult<P::Output> {
+        P::expect_named(self, expected)
     }
 
-    pub fn add_error<S: Into<Span>>(&mut self, span: S, message: String) -> ParseFailure {
+    pub fn add_error<S: Into<Span>>(&mut self, span: S, message: String) -> HardParseFailure {
         let span = span.into();
 
         self.errors.push(ParseError { span, message });
 
-        ParseFailure::new_unchecked()
+        HardParseFailure::new_unchecked()
     }
 
     #[inline]
-    pub fn add_error_with_length_one(&mut self, message: String) -> ParseFailure {
+    pub fn add_error_with_length_one(&mut self, message: String) -> HardParseFailure {
         self.add_error(self.position..self.position + 1, message)
     }
 
@@ -124,14 +128,19 @@ impl<'input, Context> Parser<'input, Context> {
 
     #[inline]
     #[must_use]
-    pub const fn mark(&self) -> usize {
-        self.position
+    pub const fn mark(&self) -> ParserPosition {
+        ParserPosition(self.position)
+    }
+
+    #[inline]
+    pub const fn restore(&mut self, ParserPosition(position): ParserPosition) {
+        self.position = position;
     }
 
     #[inline]
     #[must_use]
-    pub fn slice_from(&self, marker: usize) -> &'input str {
-        &self.input[marker..self.position]
+    pub fn slice_from(&self, ParserPosition(position): ParserPosition) -> &'input str {
+        &self.input[position..self.position]
     }
 }
 
