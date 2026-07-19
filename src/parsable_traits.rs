@@ -1,17 +1,17 @@
 use crate::{
     parser::Parser,
-    result::{hard::HardParseResult, regular::ParseResult},
+    result::{HardParseResult, OptionParseResult, ParseResult, ParseResultTExt},
 };
 
-pub trait Parsable<'input, Context>: Sized {
+pub trait Parsable<'input, Context> {
     const NAME: &'static str;
 
     type Output;
 
     fn parse(parser: &mut Parser<'input, Context>) -> ParseResult<Self::Output>;
 
-    fn try_parse(parser: &mut Parser<'input, Context>) -> HardParseResult<Option<Self::Output>> {
-        Self::parse(parser).into_hard_option_parse_result()
+    fn try_parse(parser: &mut Parser<'input, Context>) -> OptionParseResult<Self::Output> {
+        Self::parse(parser).into_option_parse_result()
     }
 
     #[inline]
@@ -27,7 +27,7 @@ pub trait Parsable<'input, Context>: Sized {
     }
 }
 
-pub trait ParsableInstance<'input, Context>: Sized {
+pub trait ParsableInstance<'input, Context> {
     type Output;
 
     #[must_use]
@@ -37,7 +37,7 @@ pub trait ParsableInstance<'input, Context>: Sized {
 
     #[inline]
     fn expect_instance(
-        self,
+        &self,
         parser: &mut Parser<'input, Context>,
     ) -> HardParseResult<Self::Output> {
         self.parse_instance(parser)

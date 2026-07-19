@@ -1,10 +1,6 @@
 use crate::{
     parsable_traits::Parsable,
-    result::{
-        hard::{HardParseFailure, HardParseResult},
-        regular::ParseResult,
-        soft::SoftParseResult,
-    },
+    result::{HardParseFailure, HardParseResult, ParseResult, SoftParseFailure, SoftParseResult},
     span::Span,
 };
 
@@ -162,9 +158,9 @@ impl<'input, Context> Parser<'input, Context> {
         let text = self.slice_from(start);
 
         if text.is_empty() {
-            SoftParseResult::Failure
+            Err(SoftParseFailure)
         } else {
-            SoftParseResult::Success(text)
+            Ok(text)
         }
     }
 
@@ -187,16 +183,13 @@ impl<'input> Parser<'input, ()> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{parser::Parser, result::soft::SoftParseResult};
+    use crate::parser::Parser;
 
     #[test]
     fn parse_take_while() {
         let mut parser = Parser::new("aaab");
 
-        assert_eq!(
-            parser.take_while(|character| character == 'a'),
-            SoftParseResult::Success("aaa")
-        );
+        assert_eq!(parser.take_while(|character| character == 'a'), Ok("aaa"));
         assert_eq!(parser.remaining(), "b");
     }
 
@@ -204,10 +197,7 @@ mod tests {
     fn parse_take_until() {
         let mut parser = Parser::new("abcdef");
 
-        assert_eq!(
-            parser.take_until(|character| character == 'd'),
-            SoftParseResult::Success("abc")
-        );
+        assert_eq!(parser.take_until(|character| character == 'd'), Ok("abc"));
         assert_eq!(parser.remaining(), "def");
     }
 }

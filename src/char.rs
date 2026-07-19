@@ -1,7 +1,7 @@
 use crate::{
     parsable_traits::{Parsable, ParsableInstance},
     parser::Parser,
-    result::regular::ParseResult,
+    result::{ParseFailure, ParseResult},
 };
 
 impl<Context> Parsable<'_, Context> for char {
@@ -11,12 +11,12 @@ impl<Context> Parsable<'_, Context> for char {
 
     fn parse(parser: &mut Parser<'_, Context>) -> ParseResult<Self::Output> {
         let Some(character) = parser.peek() else {
-            return ParseResult::SoftFailure;
+            return Err(ParseFailure::Soft);
         };
 
         parser.advance_len(character.len_utf8());
 
-        ParseResult::Success(character)
+        Ok(character)
     }
 }
 
@@ -29,11 +29,11 @@ impl<Context> ParsableInstance<'_, Context> for char {
 
     fn parse_instance(&self, parser: &mut Parser<'_, Context>) -> ParseResult<Self::Output> {
         if parser.peek().is_none_or(|character| character != *self) {
-            return ParseResult::SoftFailure;
+            return Err(ParseFailure::Soft);
         }
 
         parser.advance_len(self.len_utf8());
 
-        ParseResult::Success(*self)
+        Ok(*self)
     }
 }

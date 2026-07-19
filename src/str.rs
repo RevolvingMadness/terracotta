@@ -1,7 +1,7 @@
 use crate::{
     parsable_traits::{Parsable, ParsableInstance},
     parser::Parser,
-    result::{hard::HardParseResult, regular::ParseResult},
+    result::{OptionParseResult, ParseFailure, ParseResult},
 };
 
 pub trait StrExt<'input> {
@@ -9,12 +9,12 @@ pub trait StrExt<'input> {
         &self,
         context: Context,
         allow_trailing: bool,
-    ) -> (Parser<'input, Context>, HardParseResult<Option<P::Output>>);
+    ) -> (Parser<'input, Context>, OptionParseResult<P::Output>);
 
     fn parse_standalone<P: Parsable<'input, ()>>(
         &self,
         allow_trailing: bool,
-    ) -> (Parser<'input, ()>, HardParseResult<Option<P::Output>>);
+    ) -> (Parser<'input, ()>, OptionParseResult<P::Output>);
 }
 
 impl<'input> StrExt<'input> for &'input str {
@@ -22,7 +22,7 @@ impl<'input> StrExt<'input> for &'input str {
         &self,
         context: Context,
         allow_trailing: bool,
-    ) -> (Parser<'input, Context>, HardParseResult<Option<P::Output>>) {
+    ) -> (Parser<'input, Context>, OptionParseResult<P::Output>) {
         let mut parser = Parser::new_with_context(self, context);
 
         let result = P::try_parse(&mut parser);
@@ -31,7 +31,7 @@ impl<'input> StrExt<'input> for &'input str {
             if !allow_trailing && !parser.remaining().is_empty() {
                 let failure = parser.add_error_with_length_one("Expected end of input".to_owned());
 
-                break 'result HardParseResult::Failure(failure);
+                break 'result Err(failure);
             }
 
             result
@@ -44,7 +44,7 @@ impl<'input> StrExt<'input> for &'input str {
     fn parse_standalone<P: Parsable<'input, ()>>(
         &self,
         allow_trailing: bool,
-    ) -> (Parser<'input, ()>, HardParseResult<Option<P::Output>>) {
+    ) -> (Parser<'input, ()>, OptionParseResult<P::Output>) {
         self.parse_standalone_with_context::<_, P>((), allow_trailing)
     }
 }
@@ -58,11 +58,11 @@ impl<Context> ParsableInstance<'_, Context> for &str {
 
     fn parse_instance(&self, parser: &mut Parser<'_, Context>) -> ParseResult<Self::Output> {
         if !parser.remaining().starts_with(self) {
-            return ParseResult::SoftFailure;
+            return Err(ParseFailure::Soft);
         }
 
         parser.advance_len(self.len());
 
-        ParseResult::Success(self)
+        Ok(self)
     }
 }

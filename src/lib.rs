@@ -1,5 +1,3 @@
-#![feature(try_trait_v2, try_trait_v2_residual)]
-
 pub mod char;
 pub mod parsable_traits;
 pub mod parser;
