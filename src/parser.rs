@@ -38,6 +38,9 @@ impl ParserPosition {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct CalledFromParser(pub(crate) ());
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ParseError {
     pub span: Span,
@@ -64,27 +67,64 @@ impl<'input, Context> Parser<'input, Context> {
         }
     }
 
+    #[cfg_attr(feature = "tracing", tracing::instrument(
+           name = "parse",
+           level = "debug",
+           skip(self),
+           fields(
+               rule = P::NAME,
+               position = self.position().0,
+           ),
+       ))]
     #[inline]
     pub fn parse<P: Parsable<'input, Context>>(&mut self) -> ParseResult<P::Output> {
-        P::parse(self)
+        P::parse(self, CalledFromParser(()))
     }
 
+    #[cfg_attr(feature = "tracing", tracing::instrument(
+           name = "try_parse",
+           level = "debug",
+           skip(self),
+           fields(
+               rule = P::NAME,
+               position = self.position().0,
+           ),
+       ))]
     #[inline]
     pub fn try_parse<P: Parsable<'input, Context>>(&mut self) -> OptionParseResult<P::Output> {
-        P::try_parse(self)
+        P::try_parse(self, CalledFromParser(()))
     }
 
+    #[cfg_attr(feature = "tracing", tracing::instrument(
+           name = "expect",
+           level = "debug",
+           skip(self),
+           fields(
+               rule = P::NAME,
+               position = self.position().0,
+           ),
+       ))]
     #[inline]
     pub fn expect<P: Parsable<'input, Context>>(&mut self) -> HardParseResult<P::Output> {
-        self.expect_named::<P>(P::NAME)
+        P::expect(self, CalledFromParser(()))
     }
 
+    #[cfg_attr(feature = "tracing", tracing::instrument(
+           name = "expect_named",
+           level = "debug",
+           skip(self),
+           fields(
+               rule = P::NAME,
+               expected = expected,
+               position = self.position().0,
+           ),
+       ))]
     #[inline]
     pub fn expect_named<P: Parsable<'input, Context>>(
         &mut self,
         expected: &str,
     ) -> HardParseResult<P::Output> {
-        P::expect_named(self, expected)
+        P::expect_named(self, CalledFromParser(()), expected)
     }
 
     pub fn parse_fully<P: Parsable<'input, Context>>(
@@ -111,7 +151,7 @@ impl<'input, Context> Parser<'input, Context> {
 
         self.errors.push(ParseError { span, message });
 
-        HardParseFailure::new_unchecked()
+        HardParseFailure(())
     }
 
     #[inline]
@@ -120,6 +160,12 @@ impl<'input, Context> Parser<'input, Context> {
             ParserPosition(self.position)..ParserPosition(self.position + 1),
             message,
         )
+    }
+
+    #[inline]
+    #[must_use]
+    pub fn consumed(&self) -> &'input str {
+        &self.input[..self.position]
     }
 
     #[inline]
@@ -164,11 +210,6 @@ impl<'input, Context> Parser<'input, Context> {
     }
 
     #[inline]
-    pub const fn advance_len_unchecked(&mut self, len: usize) {
-        self.position += len;
-    }
-
-    #[inline]
     pub const fn advance_char(&mut self, character: char) {
         self.position += character.len_utf8();
     }
@@ -203,14 +244,8 @@ impl<'input, Context> Parser<'input, Context> {
 
     #[inline]
     #[must_use]
-    pub fn slice_from(&self, ParserPosition(position): ParserPosition) -> &'input str {
-        &self.input[position..self.position]
-    }
-
-    #[inline]
-    #[must_use]
-    pub fn slice_to(&self, ParserPosition(position): ParserPosition) -> &'input str {
-        &self.input[self.position..position]
+    pub fn slice_position(&self, other: ParserPosition) -> &'input str {
+        self.slice(self.position().span(other))
     }
 }
 
@@ -229,7 +264,7 @@ impl<'input, Context> Parser<'input, Context> {
             self.position += character.len_utf8();
         }
 
-        let text = self.slice_from(start);
+        let text = self.slice_position(start);
 
         if text.is_empty() {
             Err(SoftParseFailure)

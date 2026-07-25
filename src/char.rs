@@ -1,6 +1,6 @@
 use crate::{
     parsable_traits::{Parsable, ParsableInstance},
-    parser::Parser,
+    parser::{CalledFromParser, Parser},
     result::{ParseFailure, ParseResult},
 };
 
@@ -9,7 +9,7 @@ impl<Context> Parsable<'_, Context> for char {
 
     type Output = Self;
 
-    fn parse(parser: &mut Parser<'_, Context>) -> ParseResult<Self::Output> {
+    fn parse(parser: &mut Parser<'_, Context>, _: CalledFromParser) -> ParseResult<Self::Output> {
         let Some(character) = parser.peek() else {
             return Err(ParseFailure::Soft);
         };
@@ -24,7 +24,7 @@ impl<Context> ParsableInstance<'_, Context> for char {
     type Output = Self;
 
     fn name(&self) -> String {
-        self.to_string()
+        format!("`{}`", self)
     }
 
     fn parse_instance(&self, parser: &mut Parser<'_, Context>) -> ParseResult<Self::Output> {

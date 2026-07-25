@@ -15,8 +15,13 @@ impl From<Span> for Range<ParserPosition> {
 }
 
 impl From<Span> for Range<usize> {
-    fn from(Span { start, end }: Span) -> Self {
-        start.0..end.0
+    fn from(
+        Span {
+            start: ParserPosition(start),
+            end: ParserPosition(end),
+        }: Span,
+    ) -> Self {
+        start..end
     }
 }
 
@@ -86,15 +91,27 @@ impl Span {
         self.end.0 == self.start.0
     }
 
-    #[inline]
     #[must_use]
-    pub const fn merge(mut self, other: ParserPosition) -> Self {
-        if other.0 > self.start.0 {
+    pub const fn expand(mut self, other: ParserPosition) -> Self {
+        if other.0 < self.start.0 {
             self.start = other;
         }
 
         if other.0 > self.end.0 {
             self.end = other;
+        }
+
+        self
+    }
+
+    #[must_use]
+    pub const fn merge(mut self, other: Self) -> Self {
+        if other.start.0 < self.start.0 {
+            self.start = other.start;
+        }
+
+        if other.end.0 > self.end.0 {
+            self.end = other.end;
         }
 
         self

@@ -20,12 +20,6 @@ impl From<HardParseFailure> for ParseFailure {
 
 impl HardParseFailure {
     #[inline]
-    #[must_use]
-    pub const fn new_unchecked() -> Self {
-        Self(())
-    }
-
-    #[inline]
     pub const fn into_parse_result<T>(self) -> ParseResult<T> {
         Err(ParseFailure::Hard(self))
     }
