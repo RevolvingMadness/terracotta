@@ -82,6 +82,20 @@ pub type HardParseResult<T> = Result<T, HardParseFailure>;
 
 pub type OptionParseResult<T> = Result<Option<T>, HardParseFailure>;
 
+pub trait OptionParseResultExt<T> {
+    fn into_parse_result(self) -> ParseResult<T>;
+}
+
+impl<T> OptionParseResultExt<T> for OptionParseResult<T> {
+    fn into_parse_result(self) -> ParseResult<T> {
+        match self {
+            Ok(Some(value)) => Ok(value),
+            Ok(None) => Err(ParseFailure::Soft),
+            Err(failure) => Err(ParseFailure::Hard(failure)),
+        }
+    }
+}
+
 pub trait OptionTExt<T> {
     fn into_parse_result(self) -> ParseResult<T>;
 }
@@ -89,8 +103,8 @@ pub trait OptionTExt<T> {
 impl<T> OptionTExt<T> for Option<T> {
     fn into_parse_result(self) -> ParseResult<T> {
         match self {
-            Self::Some(value) => Ok(value),
-            Self::None => Err(ParseFailure::Soft),
+            Some(value) => Ok(value),
+            None => Err(ParseFailure::Soft),
         }
     }
 }
