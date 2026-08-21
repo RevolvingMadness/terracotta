@@ -15,6 +15,22 @@ pub struct FullParseResult<Context, Output> {
     pub output: Option<Output>,
 }
 
+impl<Context, Output> FullParseResult<Context, Output> {
+    #[track_caller]
+    pub fn unwrap(self) -> (Context, Output) {
+        let Some(output) = self.output else {
+            panic!("called `FullParseResult::unwrap()` on a `None` output value")
+        };
+
+        assert!(
+            self.errors.is_empty(),
+            "called `FullParseResult::unwrap()` with non-zero error count"
+        );
+
+        (self.context, output)
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ParserPosition(pub(crate) usize);
 
@@ -134,7 +150,7 @@ impl<'input, Context> Parser<'input, Context> {
         let result = self.try_parse::<P>();
 
         if !allow_trailing && !self.remaining().is_empty() {
-            self.add_error_with_length_one("Expected end of input".to_owned());
+            self.add_error_at_current_position("Expected end of input".to_owned());
         }
 
         let output = result.ok().flatten();
@@ -155,11 +171,14 @@ impl<'input, Context> Parser<'input, Context> {
     }
 
     #[inline]
-    pub fn add_error_with_length_one(&mut self, message: String) -> HardParseFailure {
-        self.add_error(
-            ParserPosition(self.position)..ParserPosition(self.position + 1),
-            message,
-        )
+    pub fn add_error_at_current_position(&mut self, message: String) -> HardParseFailure {
+        let character_len = self.peek().map_or(0, char::len_utf8);
+
+        let start = ParserPosition(self.position);
+
+        let end = ParserPosition(self.position + character_len);
+
+        self.add_error(start..end, message)
     }
 
     #[inline]
@@ -197,10 +216,10 @@ impl<'input, Context> Parser<'input, Context> {
         self.position += character.len_utf8();
     }
 
-    pub fn advance_chars(&mut self, number_of_chars: usize) {
-        let mut chars = self.input.chars();
+    pub fn advance_chars(&mut self, character_count: usize) {
+        let mut chars = self.remaining().chars();
 
-        for _ in 0..number_of_chars {
+        for _ in 0..character_count {
             let Some(character) = chars.next() else {
                 break;
             };
@@ -250,35 +269,32 @@ impl<'input, Context> Parser<'input, Context> {
 }
 
 impl<'input, Context> Parser<'input, Context> {
+    #[inline]
+    pub fn take_until<F>(&mut self, predicate: F) -> SoftParseResult<&'input str>
+    where
+        F: FnMut(char) -> bool,
+    {
+        let remaining = self.remaining();
+
+        let end = match remaining.find(predicate) {
+            Some(index) => index,
+            None => remaining.len(),
+        };
+
+        if end == 0 {
+            Err(SoftParseFailure)
+        } else {
+            self.position += end;
+
+            Ok(&remaining[..end])
+        }
+    }
+
     pub fn take_while<F>(&mut self, mut predicate: F) -> SoftParseResult<&'input str>
     where
         F: FnMut(char) -> bool,
     {
-        let start = self.position();
-
-        while let Some(character) = self.peek() {
-            if !predicate(character) {
-                break;
-            }
-
-            self.position += character.len_utf8();
-        }
-
-        let text = self.slice_position(start);
-
-        if text.is_empty() {
-            Err(SoftParseFailure)
-        } else {
-            Ok(text)
-        }
-    }
-
-    #[inline]
-    pub fn take_until<F>(&mut self, mut predicate: F) -> SoftParseResult<&'input str>
-    where
-        F: FnMut(char) -> bool,
-    {
-        self.take_while(|character| !predicate(character))
+        self.take_until(|character| !predicate(character))
     }
 }
 

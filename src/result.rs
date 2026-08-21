@@ -67,7 +67,7 @@ impl<T> ParseResultTExt<T> for ParseResult<T> {
             Err(ParseFailure::Soft) => {
                 let message = message();
 
-                let failure = parser.add_error_with_length_one(message);
+                let failure = parser.add_error_at_current_position(message);
 
                 Err(failure)
             }
@@ -78,15 +78,28 @@ impl<T> ParseResultTExt<T> for ParseResult<T> {
 
 pub type SoftParseResult<T> = Result<T, SoftParseFailure>;
 
+pub trait SoftParseResultTExt<T> {
+    fn into_parse_result(self) -> ParseResult<T>;
+}
+
+impl<T> SoftParseResultTExt<T> for SoftParseResult<T> {
+    fn into_parse_result(self) -> ParseResult<T> {
+        match self {
+            Ok(value) => Ok(value),
+            Err(SoftParseFailure) => Err(ParseFailure::Soft),
+        }
+    }
+}
+
 pub type HardParseResult<T> = Result<T, HardParseFailure>;
 
 pub type OptionParseResult<T> = Result<Option<T>, HardParseFailure>;
 
-pub trait OptionParseResultExt<T> {
+pub trait OptionParseResultTExt<T> {
     fn into_parse_result(self) -> ParseResult<T>;
 }
 
-impl<T> OptionParseResultExt<T> for OptionParseResult<T> {
+impl<T> OptionParseResultTExt<T> for OptionParseResult<T> {
     fn into_parse_result(self) -> ParseResult<T> {
         match self {
             Ok(Some(value)) => Ok(value),
@@ -97,11 +110,21 @@ impl<T> OptionParseResultExt<T> for OptionParseResult<T> {
 }
 
 pub trait OptionTExt<T> {
-    fn into_parse_result(self) -> ParseResult<T>;
+    fn into_soft_parse_result(self) -> SoftParseResult<T>;
+
+    fn into_parse_result_soft(self) -> ParseResult<T>;
 }
 
 impl<T> OptionTExt<T> for Option<T> {
-    fn into_parse_result(self) -> ParseResult<T> {
+    fn into_soft_parse_result(self) -> SoftParseResult<T> {
+        match self {
+            Some(value) => Ok(value),
+            None => Err(SoftParseFailure),
+        }
+    }
+
+    #[inline]
+    fn into_parse_result_soft(self) -> ParseResult<T> {
         match self {
             Some(value) => Ok(value),
             None => Err(ParseFailure::Soft),

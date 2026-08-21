@@ -33,18 +33,18 @@ impl<'input> StrExt<'input> for &'input str {
         &self,
         allow_trailing: bool,
     ) -> FullParseResult<(), P::Output> {
-        self.parse_standalone_with_context::<_, P>((), allow_trailing)
+        self.parse_standalone_with_context::<(), P>((), allow_trailing)
     }
 }
 
-impl<Context> ParsableInstance<'_, Context> for &str {
+impl<'input, Context> ParsableInstance<'input, Context> for &str {
     type Output = Self;
 
     fn name(&self) -> String {
         format!("`{}`", self)
     }
 
-    fn parse_instance(&self, parser: &mut Parser<'_, Context>) -> ParseResult<Self::Output> {
+    fn parse_instance(&self, parser: &mut Parser<'input, Context>) -> ParseResult<Self::Output> {
         if !parser.remaining().starts_with(self) {
             return Err(ParseFailure::Soft);
         }
