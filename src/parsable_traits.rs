@@ -15,25 +15,26 @@ pub trait Parsable<'input, Context> {
 
     fn try_parse(
         parser: &mut Parser<'input, Context>,
-        key: CalledFromParser,
+        called_from_parser: CalledFromParser,
     ) -> OptionParseResult<Self::Output> {
-        Self::parse(parser, key).into_option_parse_result()
+        Self::parse(parser, called_from_parser).into_option_parse_result()
     }
 
     #[inline]
     fn expect(
         parser: &mut Parser<'input, Context>,
-        key: CalledFromParser,
+        called_from_parser: CalledFromParser,
     ) -> HardParseResult<Self::Output> {
-        Self::expect_named(parser, key, Self::NAME)
+        Self::expect_named(parser, called_from_parser, Self::NAME)
     }
 
     fn expect_named(
         parser: &mut Parser<'input, Context>,
-        key: CalledFromParser,
+        called_from_parser: CalledFromParser,
         expected: &str,
     ) -> HardParseResult<Self::Output> {
-        Self::parse(parser, key).into_hard_parse_result(parser, || format!("expected {}", expected))
+        Self::parse(parser, called_from_parser)
+            .into_hard_parse_result(parser, || format!("expected {}", expected))
     }
 }
 
