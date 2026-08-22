@@ -63,9 +63,6 @@ impl ParserPosition {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct CalledFromParser(());
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ParseError {
     pub span: Span,
@@ -87,8 +84,8 @@ pub type ByteParserNoContext<'input> = Parser<&'input [u8]>;
 #[derive(Debug)]
 pub struct Parser<I: Input, Context = ()> {
     pub(crate) input: I,
-    position: usize,
-    errors: Vec<ParseError>,
+    pub(crate) position: usize,
+    pub(crate) errors: Vec<ParseError>,
 
     pub context: Context,
 }
@@ -115,7 +112,7 @@ impl<I: Input, Context> Parser<I, Context> {
        ))]
     #[inline]
     pub fn parse<P: Parsable<I, Context>>(&mut self) -> ParseResult<P::Output> {
-        P::parse(self, CalledFromParser(()))
+        P::parse(self)
     }
 
     #[cfg_attr(feature = "tracing", tracing::instrument(
@@ -129,7 +126,7 @@ impl<I: Input, Context> Parser<I, Context> {
        ))]
     #[inline]
     pub fn try_parse<P: Parsable<I, Context>>(&mut self) -> OptionParseResult<P::Output> {
-        P::try_parse(self, CalledFromParser(()))
+        P::try_parse(self)
     }
 
     #[cfg_attr(feature = "tracing", tracing::instrument(
@@ -143,7 +140,7 @@ impl<I: Input, Context> Parser<I, Context> {
        ))]
     #[inline]
     pub fn expect<P: Parsable<I, Context>>(&mut self) -> HardParseResult<P::Output> {
-        P::expect(self, CalledFromParser(()))
+        P::expect(self)
     }
 
     #[cfg_attr(feature = "tracing", tracing::instrument(
@@ -161,7 +158,7 @@ impl<I: Input, Context> Parser<I, Context> {
         &mut self,
         expected: &str,
     ) -> HardParseResult<P::Output> {
-        P::expect_named(self, CalledFromParser(()), expected)
+        P::expect_named(self, expected)
     }
 
     pub fn parse_fully<P: Parsable<I, Context>>(
@@ -235,17 +232,44 @@ impl<I: Input, Context> Parser<I, Context> {
     }
 
     #[inline]
+    #[must_use]
+    pub fn input_len(&self) -> usize {
+        self.input.len()
+    }
+
+    #[inline]
+    #[must_use]
     pub const fn start_position(&self) -> ParserPosition {
         ParserPosition(0)
     }
 
     #[inline]
+    #[must_use]
     pub fn end_position(&self) -> ParserPosition {
-        ParserPosition(self.input.len())
+        ParserPosition(self.input_len())
     }
 
     #[inline]
-    pub fn input_span(&self) -> Span {
+    #[must_use]
+    pub const fn consumed_span(&self) -> Span {
+        Span {
+            start: self.start_position(),
+            end: self.position(),
+        }
+    }
+
+    #[inline]
+    #[must_use]
+    pub fn remaining_span(&self) -> Span {
+        Span {
+            start: self.position(),
+            end: self.end_position(),
+        }
+    }
+
+    #[inline]
+    #[must_use]
+    pub fn whole_input_span(&self) -> Span {
         Span {
             start: self.start_position(),
             end: self.end_position(),
@@ -264,7 +288,7 @@ impl<I: Input, Context> Parser<I, Context> {
     #[inline]
     #[must_use]
     pub fn remaining(&self) -> I::Slice {
-        self.input.slice(self.input_span())
+        self.input.slice(self.whole_input_span())
     }
 
     #[inline]
