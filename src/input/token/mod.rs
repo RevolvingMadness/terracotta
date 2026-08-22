@@ -13,7 +13,13 @@ pub trait Token: PartialEq {
     }
 }
 
-impl<T: Token> Token for &T {
+impl<T: ?Sized + Token> Token for &T {
+    fn len(&self) -> usize {
+        T::len(self)
+    }
+}
+
+impl<T: ?Sized + Token> Token for &mut T {
     fn len(&self) -> usize {
         T::len(self)
     }
