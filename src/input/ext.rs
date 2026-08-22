@@ -1,38 +1,99 @@
 use crate::{
     input::Input,
-    parsable_traits::Parsable,
+    parsable_traits::{Parsable, ParsableInstance},
     parser::{FullParseResult, Parser},
 };
 
 pub trait InputExt<I: Input> {
-    fn parse_standalone_with_context<Context, P: Parsable<I, Context>>(
+    fn parse_fully_with_context<Context, P: Parsable<I, Context>>(
         self,
         context: Context,
         allow_trailing: bool,
     ) -> FullParseResult<Context, P::Output>;
 
-    fn parse_standalone<P: Parsable<I, ()>>(
+    fn parse_fully<P: Parsable<I, ()>>(
         self,
+        allow_trailing: bool,
+    ) -> FullParseResult<(), P::Output>;
+
+    fn parse_instance_fully_with_context<Context, P: ParsableInstance<I, Context>>(
+        self,
+        context: Context,
+        parsable: &P,
+        allow_trailing: bool,
+    ) -> FullParseResult<Context, P::Output>;
+
+    fn parse_instance_fully<P: ParsableInstance<I, ()>>(
+        self,
+        parsable: &P,
         allow_trailing: bool,
     ) -> FullParseResult<(), P::Output>;
 }
 
 impl<I: Input> InputExt<I> for I {
-    fn parse_standalone_with_context<Context, P: Parsable<I, Context>>(
+    fn parse_fully_with_context<Context, P: Parsable<I, Context>>(
         self,
         context: Context,
         allow_trailing: bool,
     ) -> FullParseResult<Context, P::Output> {
-        let parser = Parser::new_with_context(self, context);
+        let mut parser = Parser::new_with_context(self, context);
 
-        parser.parse_fully::<P>(allow_trailing)
+        let result = parser.expect::<P>();
+
+        if !allow_trailing && parser.has_no_errors() && parser.position() < parser.end_position() {
+            parser.add_error("Expected end of input".to_owned());
+        }
+
+        let output = result.ok();
+
+        let (context, errors) = parser.finish();
+
+        FullParseResult {
+            context,
+            errors,
+            output,
+        }
     }
 
     #[inline]
-    fn parse_standalone<P: Parsable<I, ()>>(
+    fn parse_fully<P: Parsable<I, ()>>(
         self,
         allow_trailing: bool,
     ) -> FullParseResult<(), P::Output> {
-        self.parse_standalone_with_context::<(), P>((), allow_trailing)
+        self.parse_fully_with_context::<(), P>((), allow_trailing)
+    }
+
+    fn parse_instance_fully_with_context<Context, P: ParsableInstance<I, Context>>(
+        self,
+        context: Context,
+        parsable: &P,
+        allow_trailing: bool,
+    ) -> FullParseResult<Context, P::Output> {
+        let mut parser = Parser::new_with_context(self, context);
+
+        let result = parser.expect_instance(parsable);
+
+        if !allow_trailing && parser.has_no_errors() && parser.position() < parser.end_position() {
+            parser.add_error("Expected end of input".to_owned());
+        }
+
+        let output = result.ok();
+
+        let (context, errors) = parser.finish();
+
+        FullParseResult {
+            context,
+            errors,
+            output,
+        }
+    }
+
+    #[inline]
+    fn parse_instance_fully<P: ParsableInstance<I, ()>>(
+        self,
+        parsable: &P,
+        allow_trailing: bool,
+    ) -> FullParseResult<(), P::Output> {
+        self.parse_instance_fully_with_context::<(), _>((), parsable, allow_trailing)
     }
 }

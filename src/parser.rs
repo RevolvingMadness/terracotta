@@ -2,7 +2,7 @@ use std::fmt::{self, Display, Formatter};
 
 use crate::{
     input::{Input, token::Token},
-    parsable_traits::Parsable,
+    parsable_traits::{Parsable, ParsableInstance},
     result::{
         HardParseFailure, HardParseResult, OptionParseResult, ParseFailure, ParseResult,
         SoftParseFailure, SoftParseResult,
@@ -12,9 +12,8 @@ use crate::{
 
 #[derive(Debug)]
 pub struct FullParseResult<Context, Output> {
-    pub errors: Vec<ParseError>,
     pub context: Context,
-
+    pub errors: Vec<ParseError>,
     pub output: Option<Output>,
 }
 
@@ -83,9 +82,9 @@ pub type ByteParserNoContext<'input> = Parser<&'input [u8]>;
 
 #[derive(Debug)]
 pub struct Parser<I: Input, Context = ()> {
-    pub(crate) input: I,
-    pub(crate) position: usize,
-    pub(crate) errors: Vec<ParseError>,
+    input: I,
+    position: usize,
+    errors: Vec<ParseError>,
 
     pub context: Context,
 }
@@ -161,23 +160,55 @@ impl<I: Input, Context> Parser<I, Context> {
         P::expect_named(self, expected)
     }
 
-    pub fn parse_fully<P: Parsable<I, Context>>(
-        mut self,
-        allow_trailing: bool,
-    ) -> FullParseResult<Context, P::Output> {
-        let result = self.try_parse::<P>();
+    #[cfg_attr(feature = "tracing", tracing::instrument(
+           name = "parse_instance",
+           level = "debug",
+           skip(self, parsable),
+           fields(
+               rule = %parsable.name(),
+               position = self.position().0,
+           ),
+       ))]
+    #[inline]
+    pub fn parse_instance<P: ParsableInstance<I, Context>>(
+        &mut self,
+        parsable: &P,
+    ) -> ParseResult<P::Output> {
+        parsable.parse_instance(self)
+    }
 
-        if !allow_trailing && self.errors.is_empty() && self.position < self.input.len() {
-            self.add_error("Expected end of input".to_owned());
-        }
+    #[cfg_attr(feature = "tracing", tracing::instrument(
+           name = "try_parse_instance",
+           level = "debug",
+           skip(self, parsable),
+           fields(
+               rule = %parsable.name(),
+               position = self.position().0,
+           ),
+       ))]
+    #[inline]
+    pub fn try_parse_instance<P: ParsableInstance<I, Context>>(
+        &mut self,
+        parsable: &P,
+    ) -> OptionParseResult<P::Output> {
+        parsable.try_parse_instance(self)
+    }
 
-        let output = result.ok().flatten();
-
-        FullParseResult {
-            context: self.context,
-            errors: self.errors,
-            output,
-        }
+    #[cfg_attr(feature = "tracing", tracing::instrument(
+           name = "expect_instance",
+           level = "debug",
+           skip(self, parsable),
+           fields(
+               rule = %parsable.name(),
+               position = self.position().0,
+           ),
+       ))]
+    #[inline]
+    pub fn expect_instance<P: ParsableInstance<I, Context>>(
+        &mut self,
+        parsable: &P,
+    ) -> HardParseResult<P::Output> {
+        parsable.expect_instance(self)
     }
 
     pub fn add_error_with_span<S: Into<Span>>(
@@ -233,6 +264,18 @@ impl<I: Input, Context> Parser<I, Context> {
 
     #[inline]
     #[must_use]
+    pub const fn has_no_errors(&self) -> bool {
+        self.errors.is_empty()
+    }
+
+    #[inline]
+    #[must_use]
+    pub const fn has_errors(&self) -> bool {
+        !self.errors.is_empty()
+    }
+
+    #[inline]
+    #[must_use]
     pub fn input_len(&self) -> usize {
         self.input.len()
     }
@@ -279,16 +322,13 @@ impl<I: Input, Context> Parser<I, Context> {
     #[inline]
     #[must_use]
     pub fn consumed(&self) -> I::Slice {
-        self.input.slice(Span {
-            start: ParserPosition(0),
-            end: self.position(),
-        })
+        self.input.slice(self.consumed_span())
     }
 
     #[inline]
     #[must_use]
     pub fn remaining(&self) -> I::Slice {
-        self.input.slice(self.whole_input_span())
+        self.input.slice(self.remaining_span())
     }
 
     #[inline]
@@ -328,9 +368,7 @@ impl<I: Input, Context> Parser<I, Context> {
             self.advance_token(&token);
         }
 
-        let end = self.position();
-
-        self.input.slice(Span { start, end })
+        self.input.slice(start.span(self.position()))
     }
 
     #[inline]
@@ -352,14 +390,26 @@ impl<I: Input, Context> Parser<I, Context> {
 
     #[inline]
     #[must_use]
-    pub fn slice_position(&self, other: ParserPosition) -> I::Slice {
+    pub fn slice_current_to_position(&self, other: ParserPosition) -> I::Slice {
         self.slice(self.position().span(other))
     }
 
     #[inline]
     #[must_use]
-    pub fn slice_ahead(&self, len: usize) -> I::Slice {
+    pub fn slice_starts_with(&self, position: ParserPosition, pattern: I::Slice) -> bool {
+        self.input.starts_with_slice(position, pattern)
+    }
+
+    #[inline]
+    #[must_use]
+    pub fn slice_len(&self, len: usize) -> I::Slice {
         self.input.slice_len(self.position(), len)
+    }
+
+    #[inline]
+    #[must_use]
+    pub fn finish(self) -> (Context, Vec<ParseError>) {
+        (self.context, self.errors)
     }
 
     #[inline]
