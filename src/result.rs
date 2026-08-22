@@ -1,4 +1,4 @@
-use crate::parser::Parser;
+use crate::{input::Input, parser::Parser};
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct SoftParseFailure;
@@ -41,9 +41,9 @@ pub type ParseResult<T> = Result<T, ParseFailure>;
 pub trait ParseResultTExt<T> {
     fn into_option_parse_result(self) -> OptionParseResult<T>;
 
-    fn into_hard_parse_result<Context>(
+    fn into_hard_parse_result<I: Input, Context>(
         self,
-        parser: &mut Parser<'_, Context>,
+        parser: &mut Parser<I, Context>,
         message: impl FnOnce() -> String,
     ) -> HardParseResult<T>;
 }
@@ -57,9 +57,9 @@ impl<T> ParseResultTExt<T> for ParseResult<T> {
         }
     }
 
-    fn into_hard_parse_result<Context>(
+    fn into_hard_parse_result<I: Input, Context>(
         self,
-        parser: &mut Parser<'_, Context>,
+        parser: &mut Parser<I, Context>,
         message: impl FnOnce() -> String,
     ) -> HardParseResult<T> {
         match self {

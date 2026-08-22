@@ -95,7 +95,7 @@ impl Span {
     #[inline]
     #[must_use]
     pub const fn len(&self) -> usize {
-        self.start.distance_between_self_and(self.end)
+        self.start.abs_diff(self.end)
     }
 
     #[inline]

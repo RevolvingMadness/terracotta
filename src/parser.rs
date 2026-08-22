@@ -1,6 +1,7 @@
 use std::fmt::{self, Display, Formatter};
 
 use crate::{
+    input::{Input, token::Token},
     parsable_traits::Parsable,
     result::{
         HardParseFailure, HardParseResult, OptionParseResult, ParseFailure, ParseResult,
@@ -51,7 +52,7 @@ impl ParserPosition {
 
     #[inline]
     #[must_use]
-    pub const fn distance_between_self_and(self, other: Self) -> usize {
+    pub const fn abs_diff(self, other: Self) -> usize {
         other.0.abs_diff(self.0)
     }
 
@@ -77,18 +78,22 @@ impl Display for ParseError {
     }
 }
 
+pub type StrParser<'input, Context> = Parser<&'input str, Context>;
+
+pub type StrParserNoContext<'input> = Parser<&'input str>;
+
 #[derive(Debug)]
-pub struct Parser<'input, Context = ()> {
-    input: &'input str,
+pub struct Parser<I: Input, Context = ()> {
+    pub(crate) input: I,
     position: usize,
     errors: Vec<ParseError>,
 
     pub context: Context,
 }
 
-impl<'input, Context> Parser<'input, Context> {
+impl<I: Input, Context> Parser<I, Context> {
     #[must_use]
-    pub const fn new_with_context(input: &'input str, context: Context) -> Self {
+    pub const fn new_with_context(input: I, context: Context) -> Self {
         Self {
             input,
             position: 0,
@@ -107,7 +112,7 @@ impl<'input, Context> Parser<'input, Context> {
            ),
        ))]
     #[inline]
-    pub fn parse<P: Parsable<'input, Context>>(&mut self) -> ParseResult<P::Output> {
+    pub fn parse<P: Parsable<I, Context>>(&mut self) -> ParseResult<P::Output> {
         P::parse(self, CalledFromParser(()))
     }
 
@@ -121,7 +126,7 @@ impl<'input, Context> Parser<'input, Context> {
            ),
        ))]
     #[inline]
-    pub fn try_parse<P: Parsable<'input, Context>>(&mut self) -> OptionParseResult<P::Output> {
+    pub fn try_parse<P: Parsable<I, Context>>(&mut self) -> OptionParseResult<P::Output> {
         P::try_parse(self, CalledFromParser(()))
     }
 
@@ -135,7 +140,7 @@ impl<'input, Context> Parser<'input, Context> {
            ),
        ))]
     #[inline]
-    pub fn expect<P: Parsable<'input, Context>>(&mut self) -> HardParseResult<P::Output> {
+    pub fn expect<P: Parsable<I, Context>>(&mut self) -> HardParseResult<P::Output> {
         P::expect(self, CalledFromParser(()))
     }
 
@@ -150,20 +155,20 @@ impl<'input, Context> Parser<'input, Context> {
            ),
        ))]
     #[inline]
-    pub fn expect_named<P: Parsable<'input, Context>>(
+    pub fn expect_named<P: Parsable<I, Context>>(
         &mut self,
         expected: &str,
     ) -> HardParseResult<P::Output> {
         P::expect_named(self, CalledFromParser(()), expected)
     }
 
-    pub fn parse_fully<P: Parsable<'input, Context>>(
+    pub fn parse_fully<P: Parsable<I, Context>>(
         mut self,
         allow_trailing: bool,
     ) -> FullParseResult<Context, P::Output> {
         let result = self.try_parse::<P>();
 
-        if !allow_trailing && self.errors.is_empty() && !self.remaining().is_empty() {
+        if !allow_trailing && self.errors.is_empty() && self.position < self.input.len() {
             self.add_error("Expected end of input".to_owned());
         }
 
@@ -208,7 +213,7 @@ impl<'input, Context> Parser<'input, Context> {
 
     #[inline]
     pub fn add_error(&mut self, message: String) -> HardParseFailure {
-        let character_len = self.peek().map_or(0, char::len_utf8);
+        let character_len = self.peek().map_or(0, |token| token.len());
 
         let start = ParserPosition(self.position);
 
@@ -228,60 +233,61 @@ impl<'input, Context> Parser<'input, Context> {
     }
 
     #[inline]
-    #[must_use]
-    pub fn consumed(&self) -> &'input str {
-        &self.input[..self.position]
+    pub const fn start_position(&self) -> ParserPosition {
+        ParserPosition(0)
+    }
+
+    #[inline]
+    pub fn end_position(&self) -> ParserPosition {
+        ParserPosition(self.input.len())
+    }
+
+    #[inline]
+    pub fn input_span(&self) -> Span {
+        Span {
+            start: self.start_position(),
+            end: self.end_position(),
+        }
     }
 
     #[inline]
     #[must_use]
-    pub fn remaining(&self) -> &'input str {
-        &self.input[self.position..]
+    pub fn consumed(&self) -> I::Slice {
+        self.input.slice(Span {
+            start: ParserPosition(0),
+            end: self.position(),
+        })
+    }
+
+    #[inline]
+    #[must_use]
+    pub fn remaining(&self) -> I::Slice {
+        self.input.slice(self.input_span())
+    }
+
+    #[inline]
+    #[must_use]
+    pub fn peek(&self) -> Option<I::Token> {
+        self.input.peek(self.position())
     }
 
     #[must_use]
-    pub fn peek(&self) -> Option<char> {
-        if self.position > self.input.len() {
-            return None;
-        }
-
-        self.input[self.position..].chars().next()
-    }
-
-    #[must_use]
-    pub fn peek_len(&self, len: usize) -> Option<char> {
-        self.input[self.position..].chars().nth(len)
+    pub fn peek_len(&self, len: usize) -> Option<I::Token> {
+        self.input.peek_len(self.position(), len)
     }
 
     #[inline]
     pub fn advance(&mut self) {
-        let Some(character) = self.peek() else {
+        let Some(token) = self.peek() else {
             return;
         };
 
-        self.position += character.len_utf8();
-    }
-
-    pub fn advance_chars(&mut self, character_count: usize) {
-        let mut chars = self.remaining().chars();
-
-        for _ in 0..character_count {
-            let Some(character) = chars.next() else {
-                break;
-            };
-
-            self.position += character.len_utf8();
-        }
+        self.advance_token(&token);
     }
 
     #[inline]
-    pub const fn advance_char(&mut self, character: char) {
-        self.position += character.len_utf8();
-    }
-
-    #[inline]
-    pub const fn advance_str(&mut self, str: &str) {
-        self.position += str.len();
+    pub fn advance_token(&mut self, token: &impl Token) {
+        self.position += token.len();
     }
 
     #[inline]
@@ -297,57 +303,54 @@ impl<'input, Context> Parser<'input, Context> {
 
     #[inline]
     #[must_use]
-    pub fn slice(
-        &self,
-        Span {
-            start: ParserPosition(start),
-            end: ParserPosition(end),
-        }: Span,
-    ) -> &'input str {
-        &self.input[start..end]
+    pub fn slice(&self, span: Span) -> I::Slice {
+        self.input.slice(span)
     }
 
     #[inline]
     #[must_use]
-    pub fn slice_position(&self, other: ParserPosition) -> &'input str {
+    pub fn slice_position(&self, other: ParserPosition) -> I::Slice {
         self.slice(self.position().span(other))
     }
-}
 
-impl<'input, Context> Parser<'input, Context> {
     #[inline]
-    pub fn take_until<F>(&mut self, predicate: F) -> SoftParseResult<&'input str>
+    pub fn take_until<F>(&mut self, mut predicate: F) -> SoftParseResult<I::Slice>
     where
-        F: FnMut(char) -> bool,
+        F: FnMut(I::Token) -> bool,
     {
-        let remaining = self.remaining();
+        let start = self.position();
 
-        let end = match remaining.find(predicate) {
-            Some(index) => index,
-            None => remaining.len(),
-        };
+        while let Some(token) = self.peek() {
+            let token_len = token.len();
 
-        if end == 0 {
+            if !predicate(token) {
+                break;
+            }
+
+            self.position += token_len;
+        }
+
+        let end = self.position();
+
+        if end == start {
             Err(SoftParseFailure)
         } else {
-            self.position += end;
-
-            Ok(&remaining[..end])
+            Ok(self.input.slice(Span { start, end }))
         }
     }
 
-    pub fn take_while<F>(&mut self, mut predicate: F) -> SoftParseResult<&'input str>
+    pub fn take_while<F>(&mut self, mut predicate: F) -> SoftParseResult<I::Slice>
     where
-        F: FnMut(char) -> bool,
+        F: FnMut(I::Token) -> bool,
     {
-        self.take_until(|character| !predicate(character))
+        self.take_until(|token| !predicate(token))
     }
 }
 
-impl<'input> Parser<'input, ()> {
+impl<I: Input> Parser<I, ()> {
     #[inline]
     #[must_use]
-    pub const fn new(input: &'input str) -> Self {
+    pub const fn new(input: I) -> Self {
         Self::new_with_context(input, ())
     }
 }
