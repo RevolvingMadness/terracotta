@@ -1,4 +1,7 @@
-use std::ops::{Bound, Range, RangeBounds};
+use std::{
+    fmt::{self, Display, Formatter},
+    ops::{Bound, Range, RangeBounds},
+};
 
 use crate::parser::ParserPosition;
 
@@ -48,6 +51,16 @@ impl RangeBounds<usize> for Span {
 
     fn end_bound(&self) -> Bound<&usize> {
         Bound::Excluded(&self.end.0)
+    }
+}
+
+impl Display for Span {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        if self.start == self.end {
+            write!(f, "{}", self.start)
+        } else {
+            write!(f, "{}..{}", self.start, self.end)
+        }
     }
 }
 

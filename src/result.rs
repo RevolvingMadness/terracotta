@@ -67,7 +67,7 @@ impl<T> ParseResultTExt<T> for ParseResult<T> {
             Err(ParseFailure::Soft) => {
                 let message = message();
 
-                let failure = parser.add_error_at_current_position(message);
+                let failure = parser.add_error(message);
 
                 Err(failure)
             }

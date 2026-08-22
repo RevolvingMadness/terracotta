@@ -1,8 +1,10 @@
+use std::fmt::{self, Display, Formatter};
+
 use crate::{
     parsable_traits::Parsable,
     result::{
-        HardParseFailure, HardParseResult, OptionParseResult, ParseResult, SoftParseFailure,
-        SoftParseResult,
+        HardParseFailure, HardParseResult, OptionParseResult, ParseFailure, ParseResult,
+        SoftParseFailure, SoftParseResult,
     },
     span::Span,
 };
@@ -24,7 +26,7 @@ impl<Context, Output> FullParseResult<Context, Output> {
 
         assert!(
             self.errors.is_empty(),
-            "called `FullParseResult::unwrap()` with non-zero error count"
+            "Errors should be empty if output is `None`"
         );
 
         (self.context, output)
@@ -33,6 +35,12 @@ impl<Context, Output> FullParseResult<Context, Output> {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ParserPosition(pub(crate) usize);
+
+impl Display for ParserPosition {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        self.0.fmt(f)
+    }
+}
 
 impl ParserPosition {
     #[inline]
@@ -61,6 +69,12 @@ pub struct CalledFromParser(pub(crate) ());
 pub struct ParseError {
     pub span: Span,
     pub message: String,
+}
+
+impl Display for ParseError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}: {}", self.span, self.message)
+    }
 }
 
 #[derive(Debug)]
@@ -149,8 +163,8 @@ impl<'input, Context> Parser<'input, Context> {
     ) -> FullParseResult<Context, P::Output> {
         let result = self.try_parse::<P>();
 
-        if !allow_trailing && !self.remaining().is_empty() {
-            self.add_error_at_current_position("Expected end of input".to_owned());
+        if !allow_trailing && self.errors.is_empty() && !self.remaining().is_empty() {
+            self.add_error("Expected end of input".to_owned());
         }
 
         let output = result.ok().flatten();
@@ -162,7 +176,11 @@ impl<'input, Context> Parser<'input, Context> {
         }
     }
 
-    pub fn add_error<S: Into<Span>>(&mut self, span: S, message: String) -> HardParseFailure {
+    pub fn add_error_with_span<S: Into<Span>>(
+        &mut self,
+        span: S,
+        message: String,
+    ) -> HardParseFailure {
         let span = span.into();
 
         self.errors.push(ParseError { span, message });
@@ -171,14 +189,42 @@ impl<'input, Context> Parser<'input, Context> {
     }
 
     #[inline]
-    pub fn add_error_at_current_position(&mut self, message: String) -> HardParseFailure {
+    pub fn add_error_with_span_result<T, S: Into<Span>>(
+        &mut self,
+        span: S,
+        message: String,
+    ) -> ParseResult<T> {
+        Err(ParseFailure::Hard(self.add_error_with_span(span, message)))
+    }
+
+    #[inline]
+    pub fn add_error_with_span_hard_result<T, S: Into<Span>>(
+        &mut self,
+        span: S,
+        message: String,
+    ) -> HardParseResult<T> {
+        Err(self.add_error_with_span(span, message))
+    }
+
+    #[inline]
+    pub fn add_error(&mut self, message: String) -> HardParseFailure {
         let character_len = self.peek().map_or(0, char::len_utf8);
 
         let start = ParserPosition(self.position);
 
         let end = ParserPosition(self.position + character_len);
 
-        self.add_error(start..end, message)
+        self.add_error_with_span(start..end, message)
+    }
+
+    #[inline]
+    pub fn add_error_result<T>(&mut self, message: String) -> ParseResult<T> {
+        Err(ParseFailure::Hard(self.add_error(message)))
+    }
+
+    #[inline]
+    pub fn add_error_hard_result<T>(&mut self, message: String) -> HardParseResult<T> {
+        Err(self.add_error(message))
     }
 
     #[inline]
