@@ -1,4 +1,8 @@
-pub trait Token {
+pub mod char;
+pub mod ref_str;
+pub mod u8;
+
+pub trait Token: PartialEq {
     #[must_use]
     fn len(&self) -> usize;
 
@@ -9,16 +13,8 @@ pub trait Token {
     }
 }
 
-impl Token for char {
-    #[inline]
+impl<T: Token> Token for &T {
     fn len(&self) -> usize {
-        self.len_utf8()
-    }
-}
-
-impl Token for &str {
-    #[inline]
-    fn len(&self) -> usize {
-        str::len(self)
+        T::len(self)
     }
 }

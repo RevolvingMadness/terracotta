@@ -64,7 +64,7 @@ impl ParserPosition {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct CalledFromParser(pub(crate) ());
+pub struct CalledFromParser(());
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ParseError {
@@ -79,8 +79,10 @@ impl Display for ParseError {
 }
 
 pub type StrParser<'input, Context> = Parser<&'input str, Context>;
-
 pub type StrParserNoContext<'input> = Parser<&'input str>;
+
+pub type ByteParser<'input, Context> = Parser<&'input [u8], Context>;
+pub type ByteParserNoContext<'input> = Parser<&'input [u8]>;
 
 #[derive(Debug)]
 pub struct Parser<I: Input, Context = ()> {
@@ -277,17 +279,34 @@ impl<I: Input, Context> Parser<I, Context> {
     }
 
     #[inline]
-    pub fn advance(&mut self) {
-        let Some(token) = self.peek() else {
-            return;
-        };
+    pub fn advance(&mut self) -> Option<I::Token> {
+        let token = self.peek()?;
 
         self.advance_token(&token);
+
+        Some(token)
     }
 
     #[inline]
     pub fn advance_token(&mut self, token: &impl Token) {
         self.position += token.len();
+    }
+
+    #[must_use]
+    pub fn advance_len(&mut self, len: usize) -> I::Slice {
+        let start = self.position();
+
+        for _ in 0..len {
+            let Some(token) = self.peek() else {
+                break;
+            };
+
+            self.advance_token(&token);
+        }
+
+        let end = self.position();
+
+        self.input.slice(Span { start, end })
     }
 
     #[inline]
@@ -311,6 +330,12 @@ impl<I: Input, Context> Parser<I, Context> {
     #[must_use]
     pub fn slice_position(&self, other: ParserPosition) -> I::Slice {
         self.slice(self.position().span(other))
+    }
+
+    #[inline]
+    #[must_use]
+    pub fn slice_ahead(&self, len: usize) -> I::Slice {
+        self.input.slice_len(self.position(), len)
     }
 
     #[inline]
@@ -344,6 +369,32 @@ impl<I: Input, Context> Parser<I, Context> {
         F: FnMut(I::Token) -> bool,
     {
         self.take_until(|token| !predicate(token))
+    }
+}
+
+impl<'input, T: Token, Context> Parser<&'input [T], Context> {
+    #[must_use]
+    pub fn advance_len_exact<const LEN: usize>(&mut self) -> Option<[T; LEN]>
+    where
+        [T; LEN]: TryFrom<&'input [T]>,
+    {
+        let start = self.position();
+
+        for _ in 0..LEN {
+            let Some(token) = self.peek() else {
+                self.restore(start);
+
+                return None;
+            };
+
+            self.advance_token(&token);
+        }
+
+        let end = self.position();
+
+        let slice = self.input.slice(Span { start, end });
+
+        Some(<[T; LEN]>::try_from(slice).ok().unwrap())
     }
 }
 

@@ -10,14 +10,6 @@ impl<'a> Input for &'a str {
         str::len(self)
     }
 
-    fn peek_len(
-        &self,
-        ParserPosition(position): ParserPosition,
-        len: usize,
-    ) -> Option<Self::Token> {
-        self[position..].chars().nth(len)
-    }
-
     #[inline]
     fn slice(
         &self,
@@ -36,5 +28,24 @@ impl<'a> Input for &'a str {
         pattern: Self::Slice,
     ) -> bool {
         self[position..].starts_with(pattern)
+    }
+
+    fn peek_len(
+        &self,
+        ParserPosition(position): ParserPosition,
+        len: usize,
+    ) -> Option<Self::Token> {
+        self[position..].chars().nth(len)
+    }
+
+    fn slice_len(&self, ParserPosition(position): ParserPosition, len: usize) -> Self::Slice {
+        let remaining = &self[position..];
+
+        let end = remaining
+            .char_indices()
+            .nth(len)
+            .map_or(remaining.len(), |(index, _)| index);
+
+        &remaining[..end]
     }
 }
