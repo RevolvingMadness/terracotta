@@ -1,22 +1,17 @@
 use crate::{
-    input::Input,
     parsable_traits::Parsable,
     parser::Parser,
-    result::{ParseFailure, ParseResult},
+    result::{OptionTExt, ParseResult},
 };
 
-impl<I: Input<Token = Self>, Context> Parsable<I, Context> for u8 {
+impl<'input, Context> Parsable<&'input [Self], Context> for u8 {
     const NAME: &'static str = "unsigned 8-bit integer";
 
     type Output = Self;
 
-    fn parse(parser: &mut Parser<I, Context>) -> ParseResult<Self::Output> {
-        let Some(character) = parser.peek() else {
-            return Err(ParseFailure::Soft);
-        };
+    fn parse(parser: &mut Parser<&'input [Self], Context>) -> ParseResult<Self::Output> {
+        let value = parser.advance().into_parse_result_soft()?;
 
-        parser.advance_token(&character);
-
-        Ok(character)
+        Ok(*value)
     }
 }

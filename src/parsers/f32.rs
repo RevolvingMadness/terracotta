@@ -4,34 +4,34 @@ use crate::{
     result::{OptionTExt, ParseResult},
 };
 
-pub struct BigEndianU32;
+pub struct BigEndianF32;
 
-impl<'input, Context> Parsable<&'input [u8], Context> for BigEndianU32 {
-    const NAME: &'static str = "big-endian unsigned 32-bit integer";
+impl<'input, Context> Parsable<&'input [u8], Context> for BigEndianF32 {
+    const NAME: &'static str = "big-endian 32-bit float";
 
-    type Output = u32;
+    type Output = f32;
 
     fn parse(parser: &mut Parser<&'input [u8], Context>) -> ParseResult<Self::Output> {
         let bytes = parser.advance_len_exact(4).into_parse_result_soft()?;
 
         let bytes = <[u8; 4] as TryFrom<&[u8]>>::try_from(bytes).unwrap();
 
-        Ok(u32::from_be_bytes(bytes))
+        Ok(f32::from_be_bytes(bytes))
     }
 }
 
-pub struct LittleEndianU32;
+pub struct LittleEndianF32;
 
-impl<'input, Context> Parsable<&'input [u8], Context> for LittleEndianU32 {
-    const NAME: &'static str = "little-endian unsigned 32-bit integer";
+impl<'input, Context> Parsable<&'input [u8], Context> for LittleEndianF32 {
+    const NAME: &'static str = "little-endian 32-bit float";
 
-    type Output = u32;
+    type Output = f32;
 
     fn parse(parser: &mut Parser<&'input [u8], Context>) -> ParseResult<Self::Output> {
         let bytes = parser.advance_len_exact(4).into_parse_result_soft()?;
 
         let bytes = <[u8; 4] as TryFrom<&[u8]>>::try_from(bytes).unwrap();
 
-        Ok(u32::from_le_bytes(bytes))
+        Ok(f32::from_le_bytes(bytes))
     }
 }

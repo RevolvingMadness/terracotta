@@ -371,6 +371,23 @@ impl<I: Input, Context> Parser<I, Context> {
         self.input.slice(start.span(self.position()))
     }
 
+    #[must_use]
+    pub fn advance_len_exact(&mut self, len: usize) -> Option<I::Slice> {
+        let start = self.position();
+
+        for _ in 0..len {
+            let Some(token) = self.peek() else {
+                self.restore(start);
+
+                return None;
+            };
+
+            self.advance_token(&token);
+        }
+
+        Some(self.input.slice(start.span(self.position())))
+    }
+
     #[inline]
     #[must_use]
     pub const fn position(&self) -> ParserPosition {
@@ -443,32 +460,6 @@ impl<I: Input, Context> Parser<I, Context> {
         F: FnMut(I::Token) -> bool,
     {
         self.take_until(|token| !predicate(token))
-    }
-}
-
-impl<'input, T: Token, Context> Parser<&'input [T], Context> {
-    #[must_use]
-    pub fn advance_len_exact<const LEN: usize>(&mut self) -> Option<[T; LEN]>
-    where
-        [T; LEN]: TryFrom<&'input [T]>,
-    {
-        let start = self.position();
-
-        for _ in 0..LEN {
-            let Some(token) = self.peek() else {
-                self.restore(start);
-
-                return None;
-            };
-
-            self.advance_token(&token);
-        }
-
-        let end = self.position();
-
-        let slice = self.input.slice(Span { start, end });
-
-        Some(<[T; LEN]>::try_from(slice).ok().unwrap())
     }
 }
 
