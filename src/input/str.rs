@@ -1,17 +1,13 @@
-use crate::{
-    input::{Input, token::Token},
-    parser::ParserPosition,
-    span::Span,
-};
+use crate::{input::Input, parser::ParserPosition, span::Span};
 
-impl<'input, T: Token> Input for &'input [T] {
-    type Token = &'input T;
+impl Input for str {
+    type Token = char;
 
-    type Slice = &'input [T];
+    type Slice = Self;
 
     #[inline]
     fn len(&self) -> usize {
-        <[T]>::len(self)
+        Self::len(self)
     }
 
     #[inline]
@@ -21,7 +17,7 @@ impl<'input, T: Token> Input for &'input [T] {
             start: ParserPosition(start),
             end: ParserPosition(end),
         }: Span,
-    ) -> Self::Slice {
+    ) -> &Self::Slice {
         &self[start..end]
     }
 
@@ -29,7 +25,7 @@ impl<'input, T: Token> Input for &'input [T] {
     fn starts_with_slice(
         &self,
         ParserPosition(position): ParserPosition,
-        pattern: Self::Slice,
+        pattern: &Self::Slice,
     ) -> bool {
         self[position..].starts_with(pattern)
     }
@@ -39,12 +35,17 @@ impl<'input, T: Token> Input for &'input [T] {
         ParserPosition(position): ParserPosition,
         len: usize,
     ) -> Option<Self::Token> {
-        self.get(position + len)
+        self[position..].chars().nth(len)
     }
 
-    fn slice_len(&self, ParserPosition(position): ParserPosition, len: usize) -> Self::Slice {
-        let end = (position + len).min(self.len());
+    fn slice_len(&self, ParserPosition(position): ParserPosition, len: usize) -> &Self::Slice {
+        let remaining = &self[position..];
 
-        &self[position..end]
+        let end = remaining
+            .char_indices()
+            .nth(len)
+            .map_or(remaining.len(), |(index, _)| index);
+
+        &remaining[..end]
     }
 }

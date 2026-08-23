@@ -6,32 +6,38 @@ use crate::{
     parser::{FullParseResult, Parser},
 };
 
-pub trait InputExt: Input + Sized {
-    fn parse_fully_with_context<P: ParsableWithContext<Self, Context>, Context>(
-        self,
+pub trait InputExt<'input>: Input {
+    fn parse_fully_with_context<P: ParsableWithContext<'input, Self, Context>, Context>(
+        &'input self,
         context: &Context,
         allow_trailing: bool,
     ) -> FullParseResult<P::Output>;
 
-    fn parse_fully<P: Parsable<Self>>(self, allow_trailing: bool) -> FullParseResult<P::Output>;
+    fn parse_fully<P: Parsable<'input, Self>>(
+        &'input self,
+        allow_trailing: bool,
+    ) -> FullParseResult<P::Output>;
 
-    fn parse_instance_fully_with_context<P: ParsableInstanceWithContext<Self, Context>, Context>(
-        self,
+    fn parse_instance_fully_with_context<
+        P: ParsableInstanceWithContext<'input, Self, Context>,
+        Context,
+    >(
+        &'input self,
         parsable: &P,
         context: &Context,
         allow_trailing: bool,
     ) -> FullParseResult<P::Output>;
 
-    fn parse_instance_fully<P: ParsableInstance<Self>>(
-        self,
+    fn parse_instance_fully<P: ParsableInstance<'input, Self>>(
+        &'input self,
         parsable: &P,
         allow_trailing: bool,
     ) -> FullParseResult<P::Output>;
 }
 
-impl<I: Input> InputExt for I {
-    fn parse_fully_with_context<P: ParsableWithContext<Self, Context>, Context>(
-        self,
+impl<'input, I: Input + ?Sized> InputExt<'input> for I {
+    fn parse_fully_with_context<P: ParsableWithContext<'input, Self, Context>, Context>(
+        &'input self,
         context: &Context,
         allow_trailing: bool,
     ) -> FullParseResult<P::Output> {
@@ -51,7 +57,10 @@ impl<I: Input> InputExt for I {
     }
 
     #[inline]
-    fn parse_fully<P: Parsable<Self>>(self, allow_trailing: bool) -> FullParseResult<P::Output> {
+    fn parse_fully<P: Parsable<'input, Self>>(
+        &'input self,
+        allow_trailing: bool,
+    ) -> FullParseResult<P::Output> {
         let mut parser = Parser::new(self);
 
         let result = P::expect(&mut parser);
@@ -67,8 +76,11 @@ impl<I: Input> InputExt for I {
         FullParseResult { errors, output }
     }
 
-    fn parse_instance_fully_with_context<P: ParsableInstanceWithContext<Self, Context>, Context>(
-        self,
+    fn parse_instance_fully_with_context<
+        P: ParsableInstanceWithContext<'input, Self, Context>,
+        Context,
+    >(
+        &'input self,
         parsable: &P,
         context: &Context,
         allow_trailing: bool,
@@ -89,8 +101,8 @@ impl<I: Input> InputExt for I {
     }
 
     #[inline]
-    fn parse_instance_fully<P: ParsableInstance<Self>>(
-        self,
+    fn parse_instance_fully<P: ParsableInstance<'input, Self>>(
+        &'input self,
         parsable: &P,
         allow_trailing: bool,
     ) -> FullParseResult<P::Output> {

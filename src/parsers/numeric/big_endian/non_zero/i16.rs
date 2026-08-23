@@ -9,12 +9,12 @@ use crate::{
 
 pub type BigEndianNonZeroI16 = BigEndianNonZero<i16>;
 
-impl<'input> Parsable<&'input [u8]> for BigEndianNonZeroI16 {
+impl Parsable<'_, [u8]> for BigEndianNonZeroI16 {
     const NAME: &'static str = "non-zero big-endian signed 16-bit integer";
 
     type Output = NonZeroI16;
 
-    fn parse(parser: &mut Parser<&'input [u8]>) -> ParseResult<Self::Output> {
+    fn parse(parser: &mut Parser<[u8]>) -> ParseResult<Self::Output> {
         let start = parser.position();
 
         let value = BigEndianI16::parse(parser)?;
@@ -32,12 +32,12 @@ impl<'input> Parsable<&'input [u8]> for BigEndianNonZeroI16 {
     }
 }
 
-impl<'input> Parsable<&'input [u8]> for Option<BigEndianNonZeroI16> {
+impl Parsable<'_, [u8]> for Option<BigEndianNonZeroI16> {
     const NAME: &'static str = "big-endian signed 16-bit integer";
 
     type Output = Option<NonZeroI16>;
 
-    fn parse(parser: &mut Parser<&'input [u8]>) -> ParseResult<Self::Output> {
+    fn parse(parser: &mut Parser<[u8]>) -> ParseResult<Self::Output> {
         let value = BigEndianI16::parse(parser)?;
 
         Ok(NonZeroI16::new(value))

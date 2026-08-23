@@ -9,12 +9,12 @@ use crate::{
 
 pub type LittleEndianNonZeroI64 = LittleEndianNonZero<i64>;
 
-impl<'input> Parsable<&'input [u8]> for LittleEndianNonZeroI64 {
+impl Parsable<'_, [u8]> for LittleEndianNonZeroI64 {
     const NAME: &'static str = "non-zero little-endian signed 64-bit integer";
 
     type Output = NonZeroI64;
 
-    fn parse(parser: &mut Parser<&'input [u8]>) -> ParseResult<Self::Output> {
+    fn parse(parser: &mut Parser<[u8]>) -> ParseResult<Self::Output> {
         let start = parser.position();
 
         let value = LittleEndianI64::parse(parser)?;
@@ -32,12 +32,12 @@ impl<'input> Parsable<&'input [u8]> for LittleEndianNonZeroI64 {
     }
 }
 
-impl<'input> Parsable<&'input [u8]> for Option<LittleEndianNonZeroI64> {
+impl Parsable<'_, [u8]> for Option<LittleEndianNonZeroI64> {
     const NAME: &'static str = "little-endian signed 64-bit integer";
 
     type Output = Option<NonZeroI64>;
 
-    fn parse(parser: &mut Parser<&'input [u8]>) -> ParseResult<Self::Output> {
+    fn parse(parser: &mut Parser<[u8]>) -> ParseResult<Self::Output> {
         let value = LittleEndianI64::parse(parser)?;
 
         Ok(NonZeroI64::new(value))

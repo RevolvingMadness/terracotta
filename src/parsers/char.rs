@@ -5,7 +5,7 @@ use crate::{
     result::{ParseFailure, ParseResult},
 };
 
-impl<I: Input<Token = Self>> Parsable<I> for char {
+impl<I: Input<Token = Self> + ?Sized> Parsable<'_, I> for char {
     const NAME: &'static str = "character";
 
     type Output = Self;
@@ -21,7 +21,7 @@ impl<I: Input<Token = Self>> Parsable<I> for char {
     }
 }
 
-impl<I: Input<Token = Self>> ParsableInstance<I> for char {
+impl<I: Input<Token = Self> + ?Sized> ParsableInstance<'_, I> for char {
     type Output = Self;
 
     fn name(&self) -> String {

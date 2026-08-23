@@ -9,12 +9,12 @@ use crate::{
 
 pub type BigEndianNonZeroU64 = BigEndianNonZero<u64>;
 
-impl<'input> Parsable<&'input [u8]> for BigEndianNonZeroU64 {
+impl Parsable<'_, [u8]> for BigEndianNonZeroU64 {
     const NAME: &'static str = "non-zero big-endian unsigned 64-bit integer";
 
     type Output = NonZeroU64;
 
-    fn parse(parser: &mut Parser<&'input [u8]>) -> ParseResult<Self::Output> {
+    fn parse(parser: &mut Parser<[u8]>) -> ParseResult<Self::Output> {
         let start = parser.position();
 
         let value = BigEndianU64::parse(parser)?;
@@ -32,12 +32,12 @@ impl<'input> Parsable<&'input [u8]> for BigEndianNonZeroU64 {
     }
 }
 
-impl<'input> Parsable<&'input [u8]> for Option<BigEndianNonZeroU64> {
+impl Parsable<'_, [u8]> for Option<BigEndianNonZeroU64> {
     const NAME: &'static str = "big-endian unsigned 64-bit integer";
 
     type Output = Option<NonZeroU64>;
 
-    fn parse(parser: &mut Parser<&'input [u8]>) -> ParseResult<Self::Output> {
+    fn parse(parser: &mut Parser<[u8]>) -> ParseResult<Self::Output> {
         let value = BigEndianU64::parse(parser)?;
 
         Ok(NonZeroU64::new(value))

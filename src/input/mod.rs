@@ -1,14 +1,14 @@
 use crate::{input::token::Token, parser::ParserPosition, span::Span};
 
 pub mod ext;
-pub mod ref_str;
-pub mod ref_t_slice;
+pub mod slice;
+pub mod str;
 pub mod token;
 
 pub trait Input {
-    type Token: Token;
+    type Token: Token + Clone;
 
-    type Slice;
+    type Slice: ?Sized;
 
     #[must_use]
     fn len(&self) -> usize;
@@ -26,14 +26,14 @@ pub trait Input {
     }
 
     #[must_use]
-    fn slice(&self, span: Span) -> Self::Slice;
+    fn slice(&self, span: Span) -> &Self::Slice;
 
     #[must_use]
-    fn starts_with_slice(&self, position: ParserPosition, pattern: Self::Slice) -> bool;
+    fn starts_with_slice(&self, position: ParserPosition, pattern: &Self::Slice) -> bool;
 
     #[must_use]
     fn peek_len(&self, position: ParserPosition, len: usize) -> Option<Self::Token>;
 
     #[must_use]
-    fn slice_len(&self, position: ParserPosition, len: usize) -> Self::Slice;
+    fn slice_len(&self, position: ParserPosition, len: usize) -> &Self::Slice;
 }
