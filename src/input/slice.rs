@@ -9,7 +9,7 @@ impl<T: Token + Clone> Input for [T] {
 
     #[inline]
     fn len(&self) -> usize {
-        <[T]>::len(self)
+        Self::len(self)
     }
 
     #[inline]

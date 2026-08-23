@@ -89,12 +89,14 @@ impl<'input, I: Input + ?Sized> Parser<'input, I> {
         }
     }
 
-    pub fn add_error_with_span<S: Into<Span>>(
+    pub fn add_error_with_span<S: Into<Span>, M: Display>(
         &mut self,
         span: S,
-        message: String,
+        message: M,
     ) -> HardParseFailure {
         let span = span.into();
+
+        let message = message.to_string();
 
         self.errors.push(ParseError { span, message });
 
@@ -102,25 +104,25 @@ impl<'input, I: Input + ?Sized> Parser<'input, I> {
     }
 
     #[inline]
-    pub fn add_error_with_span_result<T, S: Into<Span>>(
+    pub fn add_error_with_span_result<S: Into<Span>, M: Display, T>(
         &mut self,
         span: S,
-        message: String,
+        message: M,
     ) -> ParseResult<T> {
         Err(ParseFailure::Hard(self.add_error_with_span(span, message)))
     }
 
     #[inline]
-    pub fn add_error_with_span_hard_result<T, S: Into<Span>>(
+    pub fn add_error_with_span_hard_result<S: Into<Span>, M: Display, T>(
         &mut self,
         span: S,
-        message: String,
+        message: M,
     ) -> HardParseResult<T> {
         Err(self.add_error_with_span(span, message))
     }
 
     #[inline]
-    pub fn add_error(&mut self, message: String) -> HardParseFailure {
+    pub fn add_error<M: Display>(&mut self, message: M) -> HardParseFailure {
         let character_len = self.peek().map_or(0, |token| token.len());
 
         let start = ParserPosition(self.position);
@@ -131,12 +133,12 @@ impl<'input, I: Input + ?Sized> Parser<'input, I> {
     }
 
     #[inline]
-    pub fn add_error_result<T>(&mut self, message: String) -> ParseResult<T> {
+    pub fn add_error_result<M: Display, T>(&mut self, message: M) -> ParseResult<T> {
         Err(ParseFailure::Hard(self.add_error(message)))
     }
 
     #[inline]
-    pub fn add_error_hard_result<T>(&mut self, message: String) -> HardParseResult<T> {
+    pub fn add_error_hard_result<M: Display, T>(&mut self, message: M) -> HardParseResult<T> {
         Err(self.add_error(message))
     }
 
