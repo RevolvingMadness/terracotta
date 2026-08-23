@@ -4,17 +4,14 @@ use crate::{
     result::{ParseFailure, ParseResult},
 };
 
-impl<'input, Context> ParsableInstance<&'input str, Context> for &'input str {
+impl<'input> ParsableInstance<&'input str> for &'input str {
     type Output = Self;
 
     fn name(&self) -> String {
         format!("`{}`", self)
     }
 
-    fn parse_instance(
-        &self,
-        parser: &mut Parser<&'input str, Context>,
-    ) -> ParseResult<Self::Output> {
+    fn instance_parse(&self, parser: &mut Parser<&'input str>) -> ParseResult<Self::Output> {
         if !parser.slice_starts_with(parser.position(), self) {
             return Err(ParseFailure::Soft);
         }

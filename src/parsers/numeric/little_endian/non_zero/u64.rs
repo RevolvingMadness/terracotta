@@ -9,12 +9,12 @@ use crate::{
 
 pub type LittleEndianNonZeroU64 = LittleEndianNonZero<u64>;
 
-impl<'input, Context> Parsable<&'input [u8], Context> for LittleEndianNonZeroU64 {
+impl<'input> Parsable<&'input [u8]> for LittleEndianNonZeroU64 {
     const NAME: &'static str = "non-zero little-endian unsigned 64-bit integer";
 
     type Output = NonZeroU64;
 
-    fn parse(parser: &mut Parser<&'input [u8], Context>) -> ParseResult<Self::Output> {
+    fn parse(parser: &mut Parser<&'input [u8]>) -> ParseResult<Self::Output> {
         let start = parser.position();
 
         let value = parser.parse::<LittleEndianU64>()?;
@@ -32,12 +32,12 @@ impl<'input, Context> Parsable<&'input [u8], Context> for LittleEndianNonZeroU64
     }
 }
 
-impl<'input, Context> Parsable<&'input [u8], Context> for Option<LittleEndianNonZeroU64> {
+impl<'input> Parsable<&'input [u8]> for Option<LittleEndianNonZeroU64> {
     const NAME: &'static str = "little-endian unsigned 64-bit integer";
 
     type Output = Option<NonZeroU64>;
 
-    fn parse(parser: &mut Parser<&'input [u8], Context>) -> ParseResult<Self::Output> {
+    fn parse(parser: &mut Parser<&'input [u8]>) -> ParseResult<Self::Output> {
         let value = parser.parse::<LittleEndianU64>()?;
 
         Ok(NonZeroU64::new(value))

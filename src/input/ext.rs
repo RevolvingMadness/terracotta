@@ -1,42 +1,58 @@
 use crate::{
     input::Input,
-    parsable_traits::{Parsable, ParsableInstance},
+    parsable_traits::{
+        Parsable, ParsableInstance, ParsableInstanceWithContext, ParsableWithContext,
+    },
     parser::{FullParseResult, Parser},
 };
 
 pub trait InputExt: Input + Sized {
-    fn parse_fully_with_context<Context, P: Parsable<Self, Context>>(
+    fn parse_fully_with_context<P: ParsableWithContext<Self, Context>, Context>(
         self,
-        context: Context,
+        context: &Context,
         allow_trailing: bool,
-    ) -> FullParseResult<Context, P::Output>;
+    ) -> FullParseResult<P::Output>;
 
-    fn parse_fully<P: Parsable<Self, ()>>(
-        self,
-        allow_trailing: bool,
-    ) -> FullParseResult<(), P::Output>;
+    fn parse_fully<P: Parsable<Self>>(self, allow_trailing: bool) -> FullParseResult<P::Output>;
 
-    fn parse_instance_fully_with_context<Context, P: ParsableInstance<Self, Context>>(
+    fn parse_instance_fully_with_context<P: ParsableInstanceWithContext<Self, Context>, Context>(
         self,
-        context: Context,
         parsable: &P,
+        context: &Context,
         allow_trailing: bool,
-    ) -> FullParseResult<Context, P::Output>;
+    ) -> FullParseResult<P::Output>;
 
-    fn parse_instance_fully<P: ParsableInstance<Self, ()>>(
+    fn parse_instance_fully<P: ParsableInstance<Self>>(
         self,
         parsable: &P,
         allow_trailing: bool,
-    ) -> FullParseResult<(), P::Output>;
+    ) -> FullParseResult<P::Output>;
 }
 
 impl<I: Input> InputExt for I {
-    fn parse_fully_with_context<Context, P: Parsable<Self, Context>>(
+    fn parse_fully_with_context<P: ParsableWithContext<Self, Context>, Context>(
         self,
-        context: Context,
+        context: &Context,
         allow_trailing: bool,
-    ) -> FullParseResult<Context, P::Output> {
-        let mut parser = Parser::new_with_context(self, context);
+    ) -> FullParseResult<P::Output> {
+        let mut parser = Parser::new(self);
+
+        let result = parser.expect_with_context::<P, _>(context);
+
+        if !allow_trailing && parser.has_no_errors() && parser.position() < parser.end_position() {
+            parser.add_error("Expected end of input".to_owned());
+        }
+
+        let output = result.ok();
+
+        let errors = parser.finish();
+
+        FullParseResult { errors, output }
+    }
+
+    #[inline]
+    fn parse_fully<P: Parsable<Self>>(self, allow_trailing: bool) -> FullParseResult<P::Output> {
+        let mut parser = Parser::new(self);
 
         let result = parser.expect::<P>();
 
@@ -46,32 +62,20 @@ impl<I: Input> InputExt for I {
 
         let output = result.ok();
 
-        let (context, errors) = parser.finish();
+        let errors = parser.finish();
 
-        FullParseResult {
-            context,
-            errors,
-            output,
-        }
+        FullParseResult { errors, output }
     }
 
-    #[inline]
-    fn parse_fully<P: Parsable<Self, ()>>(
+    fn parse_instance_fully_with_context<P: ParsableInstanceWithContext<Self, Context>, Context>(
         self,
-        allow_trailing: bool,
-    ) -> FullParseResult<(), P::Output> {
-        self.parse_fully_with_context::<(), P>((), allow_trailing)
-    }
-
-    fn parse_instance_fully_with_context<Context, P: ParsableInstance<Self, Context>>(
-        self,
-        context: Context,
         parsable: &P,
+        context: &Context,
         allow_trailing: bool,
-    ) -> FullParseResult<Context, P::Output> {
-        let mut parser = Parser::new_with_context(self, context);
+    ) -> FullParseResult<P::Output> {
+        let mut parser = Parser::new(self);
 
-        let result = parser.expect_instance(parsable);
+        let result = parser.instance_expect_with_context(parsable, context);
 
         if !allow_trailing && parser.has_no_errors() && parser.position() < parser.end_position() {
             parser.add_error("Expected end of input".to_owned());
@@ -79,21 +83,29 @@ impl<I: Input> InputExt for I {
 
         let output = result.ok();
 
-        let (context, errors) = parser.finish();
+        let errors = parser.finish();
 
-        FullParseResult {
-            context,
-            errors,
-            output,
-        }
+        FullParseResult { errors, output }
     }
 
     #[inline]
-    fn parse_instance_fully<P: ParsableInstance<Self, ()>>(
+    fn parse_instance_fully<P: ParsableInstance<Self>>(
         self,
         parsable: &P,
         allow_trailing: bool,
-    ) -> FullParseResult<(), P::Output> {
-        self.parse_instance_fully_with_context::<(), _>((), parsable, allow_trailing)
+    ) -> FullParseResult<P::Output> {
+        let mut parser = Parser::new(self);
+
+        let result = parser.instance_expect(parsable);
+
+        if !allow_trailing && parser.has_no_errors() && parser.position() < parser.end_position() {
+            parser.add_error("Expected end of input".to_owned());
+        }
+
+        let output = result.ok();
+
+        let errors = parser.finish();
+
+        FullParseResult { errors, output }
     }
 }

@@ -2,12 +2,12 @@ use std::num::NonZeroI8;
 
 use crate::{parsable_traits::Parsable, parser::Parser, result::ParseResult};
 
-impl<'input, Context> Parsable<&'input [u8], Context> for NonZeroI8 {
+impl<'input> Parsable<&'input [u8]> for NonZeroI8 {
     const NAME: &'static str = "non-zero signed 8-bit integer";
 
     type Output = Self;
 
-    fn parse(parser: &mut Parser<&'input [u8], Context>) -> ParseResult<Self::Output> {
+    fn parse(parser: &mut Parser<&'input [u8]>) -> ParseResult<Self::Output> {
         let start = parser.position();
 
         let value = parser.parse::<i8>()?;
@@ -25,12 +25,12 @@ impl<'input, Context> Parsable<&'input [u8], Context> for NonZeroI8 {
     }
 }
 
-impl<'input, Context> Parsable<&'input [u8], Context> for Option<NonZeroI8> {
+impl<'input> Parsable<&'input [u8]> for Option<NonZeroI8> {
     const NAME: &'static str = "signed 8-bit integer";
 
     type Output = Self;
 
-    fn parse(parser: &mut Parser<&'input [u8], Context>) -> ParseResult<Self::Output> {
+    fn parse(parser: &mut Parser<&'input [u8]>) -> ParseResult<Self::Output> {
         let value = parser.parse::<i8>()?;
 
         Ok(NonZeroI8::new(value))

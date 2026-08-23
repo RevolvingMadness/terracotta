@@ -2,7 +2,9 @@ use std::fmt::{self, Display, Formatter};
 
 use crate::{
     input::{Input, token::Token},
-    parsable_traits::{Parsable, ParsableInstance},
+    parsable_traits::{
+        Parsable, ParsableInstance, ParsableInstanceWithContext, ParsableWithContext,
+    },
     result::{
         HardParseFailure, HardParseResult, OptionParseResult, ParseFailure, ParseResult,
         SoftParseFailure, SoftParseResult,
@@ -11,25 +13,24 @@ use crate::{
 };
 
 #[derive(Debug)]
-pub struct FullParseResult<Context, Output> {
-    pub context: Context,
+pub struct FullParseResult<Output> {
     pub errors: Vec<ParseError>,
     pub output: Option<Output>,
 }
 
-impl<Context, Output> FullParseResult<Context, Output> {
+impl<Output> FullParseResult<Output> {
     #[track_caller]
-    pub fn unwrap(self) -> (Context, Output) {
+    pub fn unwrap(self) -> Output {
         let Some(output) = self.output else {
-            panic!("called `FullParseResult::unwrap()` on a `None` output value")
+            panic!("called `FullParseResult::unwrap()` on a `None` output full parse result")
         };
 
         assert!(
             self.errors.is_empty(),
-            "Errors should be empty if output is `None`"
+            "called `FullParseResult::unwrap()` on a non-zero error full parse result"
         );
 
-        (self.context, output)
+        output
     }
 }
 
@@ -74,29 +75,24 @@ impl Display for ParseError {
     }
 }
 
-pub type StrParser<'input, Context> = Parser<&'input str, Context>;
-pub type StrParserNoContext<'input> = Parser<&'input str>;
+pub type StrParser<'input> = Parser<&'input str>;
 
-pub type ByteParser<'input, Context> = Parser<&'input [u8], Context>;
-pub type ByteParserNoContext<'input> = Parser<&'input [u8]>;
+pub type ByteParser<'input> = Parser<&'input [u8]>;
 
 #[derive(Debug)]
-pub struct Parser<I: Input, Context = ()> {
+pub struct Parser<I: Input> {
     input: I,
     position: usize,
     errors: Vec<ParseError>,
-
-    pub context: Context,
 }
 
-impl<I: Input, Context> Parser<I, Context> {
+impl<I: Input> Parser<I> {
     #[must_use]
-    pub const fn new_with_context(input: I, context: Context) -> Self {
+    pub const fn new(input: I) -> Self {
         Self {
             input,
             position: 0,
             errors: Vec::new(),
-            context,
         }
     }
 
@@ -110,8 +106,25 @@ impl<I: Input, Context> Parser<I, Context> {
            ),
        ))]
     #[inline]
-    pub fn parse<P: Parsable<I, Context>>(&mut self) -> ParseResult<P::Output> {
+    pub fn parse<P: Parsable<I>>(&mut self) -> ParseResult<P::Output> {
         P::parse(self)
+    }
+
+    #[cfg_attr(feature = "tracing", tracing::instrument(
+           name = "parse",
+           level = "debug",
+           skip(self, context),
+           fields(
+               rule = P::NAME,
+               position = self.position().0,
+           ),
+       ))]
+    #[inline]
+    pub fn parse_with_context<P: ParsableWithContext<I, Context>, Context>(
+        &mut self,
+        context: &Context,
+    ) -> ParseResult<P::Output> {
+        P::parse_with_context(self, context)
     }
 
     #[cfg_attr(feature = "tracing", tracing::instrument(
@@ -124,8 +137,25 @@ impl<I: Input, Context> Parser<I, Context> {
            ),
        ))]
     #[inline]
-    pub fn try_parse<P: Parsable<I, Context>>(&mut self) -> OptionParseResult<P::Output> {
+    pub fn try_parse<P: Parsable<I>>(&mut self) -> OptionParseResult<P::Output> {
         P::try_parse(self)
+    }
+
+    #[cfg_attr(feature = "tracing", tracing::instrument(
+           name = "try_parse",
+           level = "debug",
+           skip(self, context),
+           fields(
+               rule = P::NAME,
+               position = self.position().0,
+           ),
+       ))]
+    #[inline]
+    pub fn try_parse_with_context<P: ParsableWithContext<I, Context>, Context>(
+        &mut self,
+        context: &Context,
+    ) -> OptionParseResult<P::Output> {
+        P::try_parse_with_context(self, context)
     }
 
     #[cfg_attr(feature = "tracing", tracing::instrument(
@@ -138,8 +168,25 @@ impl<I: Input, Context> Parser<I, Context> {
            ),
        ))]
     #[inline]
-    pub fn expect<P: Parsable<I, Context>>(&mut self) -> HardParseResult<P::Output> {
+    pub fn expect<P: Parsable<I>>(&mut self) -> HardParseResult<P::Output> {
         P::expect(self)
+    }
+
+    #[cfg_attr(feature = "tracing", tracing::instrument(
+           name = "expect",
+           level = "debug",
+           skip(self, context),
+           fields(
+               rule = P::NAME,
+               position = self.position().0,
+           ),
+       ))]
+    #[inline]
+    pub fn expect_with_context<P: ParsableWithContext<I, Context>, Context>(
+        &mut self,
+        context: &Context,
+    ) -> HardParseResult<P::Output> {
+        P::expect_with_context(self, context)
     }
 
     #[cfg_attr(feature = "tracing", tracing::instrument(
@@ -153,11 +200,27 @@ impl<I: Input, Context> Parser<I, Context> {
            ),
        ))]
     #[inline]
-    pub fn expect_named<P: Parsable<I, Context>>(
+    pub fn expect_renamed<P: Parsable<I>>(&mut self, expected: &str) -> HardParseResult<P::Output> {
+        P::expect_renamed(self, expected)
+    }
+
+    #[cfg_attr(feature = "tracing", tracing::instrument(
+           name = "expect_named",
+           level = "debug",
+           skip(self, context),
+           fields(
+               rule = P::NAME,
+               expected = expected,
+               position = self.position().0,
+           ),
+       ))]
+    #[inline]
+    pub fn expect_with_context_renamed<P: ParsableWithContext<I, Context>, Context>(
         &mut self,
         expected: &str,
+        context: &Context,
     ) -> HardParseResult<P::Output> {
-        P::expect_named(self, expected)
+        P::expect_with_context_renamed(self, context, expected)
     }
 
     #[cfg_attr(feature = "tracing", tracing::instrument(
@@ -170,11 +233,29 @@ impl<I: Input, Context> Parser<I, Context> {
            ),
        ))]
     #[inline]
-    pub fn parse_instance<P: ParsableInstance<I, Context>>(
+    pub fn instance_parse<P: ParsableInstance<I>>(
         &mut self,
         parsable: &P,
     ) -> ParseResult<P::Output> {
-        parsable.parse_instance(self)
+        parsable.instance_parse(self)
+    }
+
+    #[cfg_attr(feature = "tracing", tracing::instrument(
+           name = "parse_instance",
+           level = "debug",
+           skip(self, parsable, context),
+           fields(
+               rule = %parsable.name(),
+               position = self.position().0,
+           ),
+       ))]
+    #[inline]
+    pub fn instance_parse_with_context<P: ParsableInstanceWithContext<I, Context>, Context>(
+        &mut self,
+        parsable: &P,
+        context: &Context,
+    ) -> ParseResult<P::Output> {
+        parsable.instance_parse_with_context(self, context)
     }
 
     #[cfg_attr(feature = "tracing", tracing::instrument(
@@ -187,11 +268,29 @@ impl<I: Input, Context> Parser<I, Context> {
            ),
        ))]
     #[inline]
-    pub fn try_parse_instance<P: ParsableInstance<I, Context>>(
+    pub fn instance_try_parse<P: ParsableInstance<I>>(
         &mut self,
         parsable: &P,
     ) -> OptionParseResult<P::Output> {
-        parsable.try_parse_instance(self)
+        parsable.instance_try_parse(self)
+    }
+
+    #[cfg_attr(feature = "tracing", tracing::instrument(
+           name = "try_parse_instance",
+           level = "debug",
+           skip(self, parsable, context),
+           fields(
+               rule = %parsable.name(),
+               position = self.position().0,
+           ),
+       ))]
+    #[inline]
+    pub fn instance_try_parse_with_context<P: ParsableInstanceWithContext<I, Context>, Context>(
+        &mut self,
+        parsable: &P,
+        context: &Context,
+    ) -> OptionParseResult<P::Output> {
+        parsable.instance_try_parse_with_context(self, context)
     }
 
     #[cfg_attr(feature = "tracing", tracing::instrument(
@@ -204,11 +303,29 @@ impl<I: Input, Context> Parser<I, Context> {
            ),
        ))]
     #[inline]
-    pub fn expect_instance<P: ParsableInstance<I, Context>>(
+    pub fn instance_expect<P: ParsableInstance<I>>(
         &mut self,
         parsable: &P,
     ) -> HardParseResult<P::Output> {
-        parsable.expect_instance(self)
+        parsable.instance_expect(self)
+    }
+
+    #[cfg_attr(feature = "tracing", tracing::instrument(
+           name = "expect_instance",
+           level = "debug",
+           skip(self, parsable, context),
+           fields(
+               rule = %parsable.name(),
+               position = self.position().0,
+           ),
+       ))]
+    #[inline]
+    pub fn instance_expect_with_context<P: ParsableInstanceWithContext<I, Context>, Context>(
+        &mut self,
+        parsable: &P,
+        context: &Context,
+    ) -> HardParseResult<P::Output> {
+        parsable.instance_expect_with_context(self, context)
     }
 
     pub fn add_error_with_span<S: Into<Span>>(
@@ -425,8 +542,8 @@ impl<I: Input, Context> Parser<I, Context> {
 
     #[inline]
     #[must_use]
-    pub fn finish(self) -> (Context, Vec<ParseError>) {
-        (self.context, self.errors)
+    pub fn finish(self) -> Vec<ParseError> {
+        self.errors
     }
 
     #[inline]
@@ -439,7 +556,7 @@ impl<I: Input, Context> Parser<I, Context> {
         while let Some(token) = self.peek() {
             let token_len = token.len();
 
-            if !predicate(token) {
+            if predicate(token) {
                 break;
             }
 
@@ -460,14 +577,6 @@ impl<I: Input, Context> Parser<I, Context> {
         F: FnMut(I::Token) -> bool,
     {
         self.take_until(|token| !predicate(token))
-    }
-}
-
-impl<I: Input> Parser<I, ()> {
-    #[inline]
-    #[must_use]
-    pub const fn new(input: I) -> Self {
-        Self::new_with_context(input, ())
     }
 }
 

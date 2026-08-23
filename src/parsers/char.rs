@@ -5,12 +5,12 @@ use crate::{
     result::{ParseFailure, ParseResult},
 };
 
-impl<I: Input<Token = Self>, Context> Parsable<I, Context> for char {
+impl<I: Input<Token = Self>> Parsable<I> for char {
     const NAME: &'static str = "character";
 
     type Output = Self;
 
-    fn parse(parser: &mut Parser<I, Context>) -> ParseResult<Self::Output> {
+    fn parse(parser: &mut Parser<I>) -> ParseResult<Self::Output> {
         let Some(character) = parser.peek() else {
             return Err(ParseFailure::Soft);
         };
@@ -21,14 +21,14 @@ impl<I: Input<Token = Self>, Context> Parsable<I, Context> for char {
     }
 }
 
-impl<I: Input<Token = Self>, Context> ParsableInstance<I, Context> for char {
+impl<I: Input<Token = Self>> ParsableInstance<I> for char {
     type Output = Self;
 
     fn name(&self) -> String {
         format!("`{}`", self)
     }
 
-    fn parse_instance(&self, parser: &mut Parser<I, Context>) -> ParseResult<Self::Output> {
+    fn instance_parse(&self, parser: &mut Parser<I>) -> ParseResult<Self::Output> {
         if parser.peek().is_none_or(|character| character != *self) {
             return Err(ParseFailure::Soft);
         }

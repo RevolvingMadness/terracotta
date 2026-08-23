@@ -9,12 +9,12 @@ use crate::{
 
 pub type LittleEndianNonZeroI32 = LittleEndianNonZero<i32>;
 
-impl<'input, Context> Parsable<&'input [u8], Context> for LittleEndianNonZeroI32 {
+impl<'input> Parsable<&'input [u8]> for LittleEndianNonZeroI32 {
     const NAME: &'static str = "non-zero little-endian signed 32-bit integer";
 
     type Output = NonZeroI32;
 
-    fn parse(parser: &mut Parser<&'input [u8], Context>) -> ParseResult<Self::Output> {
+    fn parse(parser: &mut Parser<&'input [u8]>) -> ParseResult<Self::Output> {
         let start = parser.position();
 
         let value = parser.parse::<LittleEndianI32>()?;
@@ -32,12 +32,12 @@ impl<'input, Context> Parsable<&'input [u8], Context> for LittleEndianNonZeroI32
     }
 }
 
-impl<'input, Context> Parsable<&'input [u8], Context> for Option<LittleEndianNonZeroI32> {
+impl<'input> Parsable<&'input [u8]> for Option<LittleEndianNonZeroI32> {
     const NAME: &'static str = "little-endian signed 32-bit integer";
 
     type Output = Option<NonZeroI32>;
 
-    fn parse(parser: &mut Parser<&'input [u8], Context>) -> ParseResult<Self::Output> {
+    fn parse(parser: &mut Parser<&'input [u8]>) -> ParseResult<Self::Output> {
         let value = parser.parse::<LittleEndianI32>()?;
 
         Ok(NonZeroI32::new(value))

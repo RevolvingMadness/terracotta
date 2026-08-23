@@ -9,12 +9,12 @@ use crate::{
 
 pub type LittleEndianNonZeroI16 = LittleEndianNonZero<i16>;
 
-impl<'input, Context> Parsable<&'input [u8], Context> for LittleEndianNonZeroI16 {
+impl<'input> Parsable<&'input [u8]> for LittleEndianNonZeroI16 {
     const NAME: &'static str = "non-zero little-endian signed 16-bit integer";
 
     type Output = NonZeroI16;
 
-    fn parse(parser: &mut Parser<&'input [u8], Context>) -> ParseResult<Self::Output> {
+    fn parse(parser: &mut Parser<&'input [u8]>) -> ParseResult<Self::Output> {
         let start = parser.position();
 
         let value = parser.parse::<LittleEndianI16>()?;
@@ -32,12 +32,12 @@ impl<'input, Context> Parsable<&'input [u8], Context> for LittleEndianNonZeroI16
     }
 }
 
-impl<'input, Context> Parsable<&'input [u8], Context> for Option<LittleEndianNonZeroI16> {
+impl<'input> Parsable<&'input [u8]> for Option<LittleEndianNonZeroI16> {
     const NAME: &'static str = "little-endian signed 16-bit integer";
 
     type Output = Option<NonZeroI16>;
 
-    fn parse(parser: &mut Parser<&'input [u8], Context>) -> ParseResult<Self::Output> {
+    fn parse(parser: &mut Parser<&'input [u8]>) -> ParseResult<Self::Output> {
         let value = parser.parse::<LittleEndianI16>()?;
 
         Ok(NonZeroI16::new(value))
