@@ -31,3 +31,15 @@ impl<'input, Context> Parsable<&'input [u8], Context> for LittleEndianNonZeroU16
         Ok(value)
     }
 }
+
+impl<'input, Context> Parsable<&'input [u8], Context> for Option<LittleEndianNonZeroU16> {
+    const NAME: &'static str = "little-endian unsigned 16-bit integer";
+
+    type Output = Option<NonZeroU16>;
+
+    fn parse(parser: &mut Parser<&'input [u8], Context>) -> ParseResult<Self::Output> {
+        let value = parser.parse::<LittleEndianU16>()?;
+
+        Ok(NonZeroU16::new(value))
+    }
+}

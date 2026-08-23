@@ -31,3 +31,15 @@ impl<'input, Context> Parsable<&'input [u8], Context> for BigEndianNonZeroU16 {
         Ok(value)
     }
 }
+
+impl<'input, Context> Parsable<&'input [u8], Context> for Option<BigEndianNonZeroU16> {
+    const NAME: &'static str = "big-endian unsigned 16-bit integer";
+
+    type Output = Option<NonZeroU16>;
+
+    fn parse(parser: &mut Parser<&'input [u8], Context>) -> ParseResult<Self::Output> {
+        let value = parser.parse::<BigEndianU16>()?;
+
+        Ok(NonZeroU16::new(value))
+    }
+}

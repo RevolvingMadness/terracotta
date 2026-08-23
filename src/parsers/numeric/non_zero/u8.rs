@@ -24,3 +24,15 @@ impl<'input, Context> Parsable<&'input [u8], Context> for NonZeroU8 {
         Ok(value)
     }
 }
+
+impl<'input, Context> Parsable<&'input [u8], Context> for Option<NonZeroU8> {
+    const NAME: &'static str = "unsigned 8-bit integer";
+
+    type Output = Self;
+
+    fn parse(parser: &mut Parser<&'input [u8], Context>) -> ParseResult<Self::Output> {
+        let value = parser.parse::<u8>()?;
+
+        Ok(NonZeroU8::new(value))
+    }
+}
