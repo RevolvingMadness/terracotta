@@ -37,7 +37,7 @@ impl<I: Input> InputExt for I {
     ) -> FullParseResult<P::Output> {
         let mut parser = Parser::new(self);
 
-        let result = parser.expect_with_context::<P, _>(context);
+        let result = P::expect_with_context(&mut parser, context);
 
         if !allow_trailing && parser.has_no_errors() && parser.position() < parser.end_position() {
             parser.add_error("Expected end of input".to_owned());
@@ -54,7 +54,7 @@ impl<I: Input> InputExt for I {
     fn parse_fully<P: Parsable<Self>>(self, allow_trailing: bool) -> FullParseResult<P::Output> {
         let mut parser = Parser::new(self);
 
-        let result = parser.expect::<P>();
+        let result = P::expect(&mut parser);
 
         if !allow_trailing && parser.has_no_errors() && parser.position() < parser.end_position() {
             parser.add_error("Expected end of input".to_owned());
@@ -75,7 +75,7 @@ impl<I: Input> InputExt for I {
     ) -> FullParseResult<P::Output> {
         let mut parser = Parser::new(self);
 
-        let result = parser.instance_expect_with_context(parsable, context);
+        let result = parsable.instance_expect_with_context(&mut parser, context);
 
         if !allow_trailing && parser.has_no_errors() && parser.position() < parser.end_position() {
             parser.add_error("Expected end of input".to_owned());
@@ -96,7 +96,7 @@ impl<I: Input> InputExt for I {
     ) -> FullParseResult<P::Output> {
         let mut parser = Parser::new(self);
 
-        let result = parser.instance_expect(parsable);
+        let result = parsable.instance_expect(&mut parser);
 
         if !allow_trailing && parser.has_no_errors() && parser.position() < parser.end_position() {
             parser.add_error("Expected end of input".to_owned());

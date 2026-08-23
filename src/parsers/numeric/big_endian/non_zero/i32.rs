@@ -17,7 +17,7 @@ impl<'input> Parsable<&'input [u8]> for BigEndianNonZeroI32 {
     fn parse(parser: &mut Parser<&'input [u8]>) -> ParseResult<Self::Output> {
         let start = parser.position();
 
-        let value = parser.parse::<BigEndianI32>()?;
+        let value = BigEndianI32::parse(parser)?;
 
         let Some(value) = NonZeroI32::new(value) else {
             let end = parser.position();
@@ -38,7 +38,7 @@ impl<'input> Parsable<&'input [u8]> for Option<BigEndianNonZeroI32> {
     type Output = Option<NonZeroI32>;
 
     fn parse(parser: &mut Parser<&'input [u8]>) -> ParseResult<Self::Output> {
-        let value = parser.parse::<BigEndianI32>()?;
+        let value = BigEndianI32::parse(parser)?;
 
         Ok(NonZeroI32::new(value))
     }

@@ -10,7 +10,7 @@ impl<'input> Parsable<&'input [u8]> for NonZeroU8 {
     fn parse(parser: &mut Parser<&'input [u8]>) -> ParseResult<Self::Output> {
         let start = parser.position();
 
-        let value = parser.parse::<u8>()?;
+        let value = u8::parse(parser)?;
 
         let Some(value) = Self::new(value) else {
             let end = parser.position();
@@ -31,7 +31,7 @@ impl<'input> Parsable<&'input [u8]> for Option<NonZeroU8> {
     type Output = Self;
 
     fn parse(parser: &mut Parser<&'input [u8]>) -> ParseResult<Self::Output> {
-        let value = parser.parse::<u8>()?;
+        let value = u8::parse(parser)?;
 
         Ok(NonZeroU8::new(value))
     }

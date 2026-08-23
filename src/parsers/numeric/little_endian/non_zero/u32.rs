@@ -17,7 +17,7 @@ impl<'input> Parsable<&'input [u8]> for LittleEndianNonZeroU32 {
     fn parse(parser: &mut Parser<&'input [u8]>) -> ParseResult<Self::Output> {
         let start = parser.position();
 
-        let value = parser.parse::<LittleEndianU32>()?;
+        let value = LittleEndianU32::parse(parser)?;
 
         let Some(value) = NonZeroU32::new(value) else {
             let end = parser.position();
@@ -38,7 +38,7 @@ impl<'input> Parsable<&'input [u8]> for Option<LittleEndianNonZeroU32> {
     type Output = Option<NonZeroU32>;
 
     fn parse(parser: &mut Parser<&'input [u8]>) -> ParseResult<Self::Output> {
-        let value = parser.parse::<LittleEndianU32>()?;
+        let value = LittleEndianU32::parse(parser)?;
 
         Ok(NonZeroU32::new(value))
     }
