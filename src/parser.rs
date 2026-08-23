@@ -199,13 +199,13 @@ impl<'input, I: Input + ?Sized> Parser<'input, I> {
 
     #[inline]
     #[must_use]
-    pub fn consumed(&self) -> &'input I::Slice {
+    pub fn consumed(&self) -> &'input I {
         self.input.slice(self.consumed_span())
     }
 
     #[inline]
     #[must_use]
-    pub fn remaining(&self) -> &'input I::Slice {
+    pub fn remaining(&self) -> &'input I {
         self.input.slice(self.remaining_span())
     }
 
@@ -235,7 +235,7 @@ impl<'input, I: Input + ?Sized> Parser<'input, I> {
     }
 
     #[must_use]
-    pub fn advance_len(&mut self, len: usize) -> &'input I::Slice {
+    pub fn advance_len(&mut self, len: usize) -> &'input I {
         let start = self.position();
 
         for _ in 0..len {
@@ -250,7 +250,7 @@ impl<'input, I: Input + ?Sized> Parser<'input, I> {
     }
 
     #[must_use]
-    pub fn advance_len_exact(&mut self, len: usize) -> Option<&'input I::Slice> {
+    pub fn advance_len_exact(&mut self, len: usize) -> Option<&'input I> {
         let start = self.position();
 
         for _ in 0..len {
@@ -279,25 +279,25 @@ impl<'input, I: Input + ?Sized> Parser<'input, I> {
 
     #[inline]
     #[must_use]
-    pub fn slice(&self, span: Span) -> &'input I::Slice {
+    pub fn slice(&self, span: Span) -> &'input I {
         self.input.slice(span)
     }
 
     #[inline]
     #[must_use]
-    pub fn slice_current_to_position(&self, other: ParserPosition) -> &'input I::Slice {
+    pub fn slice_current_to_position(&self, other: ParserPosition) -> &'input I {
         self.slice(self.position().span(other))
     }
 
     #[inline]
     #[must_use]
-    pub fn slice_starts_with(&self, position: ParserPosition, pattern: &'input I::Slice) -> bool {
+    pub fn slice_starts_with(&self, position: ParserPosition, pattern: &'input I) -> bool {
         self.input.starts_with_slice(position, pattern)
     }
 
     #[inline]
     #[must_use]
-    pub fn slice_len(&self, len: usize) -> &'input I::Slice {
+    pub fn slice_len(&self, len: usize) -> &'input I {
         self.input.slice_len(self.position(), len)
     }
 
@@ -308,7 +308,7 @@ impl<'input, I: Input + ?Sized> Parser<'input, I> {
     }
 
     #[inline]
-    pub fn take_until<F>(&mut self, mut predicate: F) -> SoftParseResult<&'input I::Slice>
+    pub fn take_until<F>(&mut self, mut predicate: F) -> SoftParseResult<&'input I>
     where
         F: FnMut(I::Token) -> bool,
     {
@@ -333,7 +333,7 @@ impl<'input, I: Input + ?Sized> Parser<'input, I> {
         }
     }
 
-    pub fn take_while<F>(&mut self, mut predicate: F) -> SoftParseResult<&'input I::Slice>
+    pub fn take_while<F>(&mut self, mut predicate: F) -> SoftParseResult<&'input I>
     where
         F: FnMut(I::Token) -> bool,
     {

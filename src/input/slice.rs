@@ -7,8 +7,6 @@ use crate::{
 impl<T: Token + Clone> Input for [T] {
     type Token = T;
 
-    type Slice = Self;
-
     #[inline]
     fn len(&self) -> usize {
         <[T]>::len(self)

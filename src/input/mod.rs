@@ -8,8 +8,6 @@ pub mod token;
 pub trait Input {
     type Token: Token + Clone;
 
-    type Slice: ?Sized;
-
     #[must_use]
     fn len(&self) -> usize;
 
@@ -26,14 +24,14 @@ pub trait Input {
     }
 
     #[must_use]
-    fn slice(&self, span: Span) -> &Self::Slice;
+    fn slice(&self, span: Span) -> &Self;
 
     #[must_use]
-    fn starts_with_slice(&self, position: ParserPosition, pattern: &Self::Slice) -> bool;
+    fn starts_with_slice(&self, position: ParserPosition, pattern: &Self) -> bool;
 
     #[must_use]
     fn peek_len(&self, position: ParserPosition, len: usize) -> Option<Self::Token>;
 
     #[must_use]
-    fn slice_len(&self, position: ParserPosition, len: usize) -> &Self::Slice;
+    fn slice_len(&self, position: ParserPosition, len: usize) -> &Self;
 }
