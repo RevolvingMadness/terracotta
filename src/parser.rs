@@ -2,10 +2,7 @@ use std::fmt::{self, Display, Formatter};
 
 use crate::{
     input::{Input, token::Token},
-    result::{
-        HardParseFailure, HardParseResult, ParseFailure, ParseResult, SoftParseFailure,
-        SoftParseResult,
-    },
+    result::{HardParseFailure, HardParseResult, OptionTExt, ParseFailure, ParseResult},
     span::Span,
 };
 
@@ -138,11 +135,6 @@ impl<'input, I: Input + ?Sized> Parser<'input, I> {
     }
 
     #[inline]
-    pub fn add_error_hard_result<M: Display, T>(&mut self, message: M) -> HardParseResult<T> {
-        Err(self.add_error(message))
-    }
-
-    #[inline]
     #[must_use]
     pub const fn has_no_errors(&self) -> bool {
         self.errors.is_empty()
@@ -212,23 +204,23 @@ impl<'input, I: Input + ?Sized> Parser<'input, I> {
     }
 
     #[inline]
-    #[must_use]
-    pub fn peek(&self) -> Option<I::Token> {
-        self.input.peek(self.position())
+    pub fn peek(&self) -> ParseResult<I::Token> {
+        self.input.peek(self.position()).into_parse_result_soft()
     }
 
-    #[must_use]
-    pub fn peek_len(&self, len: usize) -> Option<I::Token> {
-        self.input.peek_len(self.position(), len)
+    pub fn peek_len(&self, len: usize) -> ParseResult<I::Token> {
+        self.input
+            .peek_len(self.position(), len)
+            .into_parse_result_soft()
     }
 
     #[inline]
-    pub fn advance(&mut self) -> Option<I::Token> {
+    pub fn advance(&mut self) -> ParseResult<I::Token> {
         let token = self.peek()?;
 
         self.advance_token(&token);
 
-        Some(token)
+        Ok(token)
     }
 
     #[inline]
@@ -241,7 +233,7 @@ impl<'input, I: Input + ?Sized> Parser<'input, I> {
         let start = self.position();
 
         for _ in 0..len {
-            let Some(token) = self.peek() else {
+            let Ok(token) = self.peek() else {
                 break;
             };
 
@@ -251,21 +243,20 @@ impl<'input, I: Input + ?Sized> Parser<'input, I> {
         self.input.slice(start.span(self.position()))
     }
 
-    #[must_use]
-    pub fn advance_len_exact(&mut self, len: usize) -> Option<&'input I> {
+    pub fn advance_len_exact(&mut self, len: usize) -> ParseResult<&'input I> {
         let start = self.position();
 
         for _ in 0..len {
-            let Some(token) = self.peek() else {
+            let Ok(token) = self.peek() else {
                 self.restore(start);
 
-                return None;
+                return Err(ParseFailure::Soft);
             };
 
             self.advance_token(&token);
         }
 
-        Some(self.input.slice(start.span(self.position())))
+        Ok(self.input.slice(start.span(self.position())))
     }
 
     #[inline]
@@ -310,13 +301,13 @@ impl<'input, I: Input + ?Sized> Parser<'input, I> {
     }
 
     #[inline]
-    pub fn take_until<F>(&mut self, mut predicate: F) -> SoftParseResult<&'input I>
+    pub fn take_until<F>(&mut self, mut predicate: F) -> ParseResult<&'input I>
     where
         F: FnMut(I::Token) -> bool,
     {
         let start = self.position();
 
-        while let Some(token) = self.peek() {
+        while let Ok(token) = self.peek() {
             let token_len = token.len();
 
             if predicate(token) {
@@ -329,13 +320,13 @@ impl<'input, I: Input + ?Sized> Parser<'input, I> {
         let end = self.position();
 
         if end == start {
-            Err(SoftParseFailure)
+            Err(ParseFailure::Soft)
         } else {
             Ok(self.input.slice(Span { start, end }))
         }
     }
 
-    pub fn take_while<F>(&mut self, mut predicate: F) -> SoftParseResult<&'input I>
+    pub fn take_while<F>(&mut self, mut predicate: F) -> ParseResult<&'input I>
     where
         F: FnMut(I::Token) -> bool,
     {

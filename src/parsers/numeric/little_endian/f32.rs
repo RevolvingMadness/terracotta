@@ -1,8 +1,6 @@
 use crate::{
-    parsable_traits::Parsable,
-    parser::Parser,
-    parsers::numeric::little_endian::LittleEndian,
-    result::{OptionTExt, ParseResult},
+    parsable_traits::Parsable, parser::Parser, parsers::numeric::little_endian::LittleEndian,
+    result::ParseResult,
 };
 
 pub type LittleEndianF32 = LittleEndian<f32>;
@@ -13,7 +11,7 @@ impl Parsable<'_, [u8]> for LittleEndianF32 {
     type Output = f32;
 
     fn parse(parser: &mut Parser<[u8]>) -> ParseResult<Self::Output> {
-        let bytes = parser.advance_len_exact(4).into_parse_result_soft()?;
+        let bytes = parser.advance_len_exact(4)?;
 
         let bytes = <[u8; 4] as TryFrom<&[u8]>>::try_from(bytes).unwrap();
 

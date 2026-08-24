@@ -11,7 +11,7 @@ impl<I: Input<Token = Self> + ?Sized> Parsable<'_, I> for char {
     type Output = Self;
 
     fn parse(parser: &mut Parser<I>) -> ParseResult<Self::Output> {
-        let Some(character) = parser.peek() else {
+        let Ok(character) = parser.peek() else {
             return Err(ParseFailure::Soft);
         };
 
@@ -29,7 +29,11 @@ impl<I: Input<Token = Self> + ?Sized> ParsableInstance<'_, I> for char {
     }
 
     fn instance_parse(&self, parser: &mut Parser<I>) -> ParseResult<Self::Output> {
-        if parser.peek().is_none_or(|character| character != *self) {
+        let Ok(character) = parser.peek() else {
+            return Err(ParseFailure::Soft);
+        };
+
+        if character != *self {
             return Err(ParseFailure::Soft);
         }
 
