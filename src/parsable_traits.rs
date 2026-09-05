@@ -35,19 +35,19 @@ pub trait ParsableWithContext<'input, I: Input + ?Sized, Context> {
 
     fn parse_with_context(
         parser: &mut Parser<'input, I>,
-        context: &Context,
+        context: &mut Context,
     ) -> ParseResult<Self::Output>;
 
     fn try_parse_with_context(
         parser: &mut Parser<'input, I>,
-        context: &Context,
+        context: &mut Context,
     ) -> OptionParseResult<Self::Output> {
         Self::parse_with_context(parser, context).into_option_parse_result()
     }
 
     fn expect_with_context_renamed(
         parser: &mut Parser<'input, I>,
-        context: &Context,
+        context: &mut Context,
         expected: &str,
     ) -> HardParseResult<Self::Output> {
         Self::parse_with_context(parser, context)
@@ -57,7 +57,7 @@ pub trait ParsableWithContext<'input, I: Input + ?Sized, Context> {
     #[inline]
     fn expect_with_context(
         parser: &mut Parser<'input, I>,
-        context: &Context,
+        context: &mut Context,
     ) -> HardParseResult<Self::Output> {
         Self::expect_with_context_renamed(parser, context, Self::NAME)
     }
@@ -72,7 +72,7 @@ impl<'input, I: Input + ?Sized, Context, P: Parsable<'input, I>>
 
     fn parse_with_context(
         parser: &mut Parser<'input, I>,
-        _: &Context,
+        _: &mut Context,
     ) -> ParseResult<Self::Output> {
         P::parse(parser)
     }
@@ -109,13 +109,13 @@ pub trait ParsableInstanceWithContext<'input, I: Input + ?Sized, Context> {
     fn instance_parse_with_context(
         &self,
         parser: &mut Parser<'input, I>,
-        context: &Context,
+        context: &mut Context,
     ) -> ParseResult<Self::Output>;
 
     fn instance_try_parse_with_context(
         &self,
         parser: &mut Parser<'input, I>,
-        context: &Context,
+        context: &mut Context,
     ) -> OptionParseResult<Self::Output> {
         self.instance_parse_with_context(parser, context)
             .into_option_parse_result()
@@ -125,7 +125,7 @@ pub trait ParsableInstanceWithContext<'input, I: Input + ?Sized, Context> {
     fn instance_expect_with_context(
         &self,
         parser: &mut Parser<'input, I>,
-        context: &Context,
+        context: &mut Context,
     ) -> HardParseResult<Self::Output> {
         self.instance_parse_with_context(parser, context)
             .into_hard_parse_result(parser, || format!("expected {}", self.name()))
@@ -144,7 +144,7 @@ impl<'input, I: Input + ?Sized, Context, P: ParsableInstance<'input, I>>
     fn instance_parse_with_context(
         &self,
         parser: &mut Parser<'input, I>,
-        _: &Context,
+        _: &mut Context,
     ) -> ParseResult<Self::Output> {
         self.instance_parse(parser)
     }

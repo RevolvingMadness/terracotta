@@ -9,7 +9,7 @@ use crate::{
 pub trait InputExt<'input>: Input {
     fn parse_fully_with_context<P: ParsableWithContext<'input, Self, Context>, Context>(
         &'input self,
-        context: &Context,
+        context: &mut Context,
         allow_trailing: bool,
     ) -> FullParseResult<P::Output>;
 
@@ -24,7 +24,7 @@ pub trait InputExt<'input>: Input {
     >(
         &'input self,
         parsable: &P,
-        context: &Context,
+        context: &mut Context,
         allow_trailing: bool,
     ) -> FullParseResult<P::Output>;
 
@@ -38,7 +38,7 @@ pub trait InputExt<'input>: Input {
 impl<'input, I: Input + ?Sized> InputExt<'input> for I {
     fn parse_fully_with_context<P: ParsableWithContext<'input, Self, Context>, Context>(
         &'input self,
-        context: &Context,
+        context: &mut Context,
         allow_trailing: bool,
     ) -> FullParseResult<P::Output> {
         let mut parser = Parser::new(self);
@@ -82,7 +82,7 @@ impl<'input, I: Input + ?Sized> InputExt<'input> for I {
     >(
         &'input self,
         parsable: &P,
-        context: &Context,
+        context: &mut Context,
         allow_trailing: bool,
     ) -> FullParseResult<P::Output> {
         let mut parser = Parser::new(self);
