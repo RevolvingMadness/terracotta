@@ -1,5 +1,5 @@
 use crate::{
-    parsable_traits::ParsableInstance,
+    parsable_traits::{ParsableInstance, ParsableInstanceError},
     parse_error::DefaultParseError,
     parser::Parser,
     result::{ParseFailure, ParseResult},
@@ -29,10 +29,6 @@ impl ExpectedStringParseError for DefaultParseError {
 impl<'input, E: ExpectedStringParseError> ParsableInstance<'input, str, E> for &'input str {
     type Output = Self;
 
-    fn error(&self) -> E {
-        E::expected_string(self)
-    }
-
     fn instance_parse(&self, parser: &mut Parser<'input, str, E>) -> ParseResult<Self::Output> {
         if !parser.slice_starts_with(parser.position(), self) {
             return Err(ParseFailure::Soft);
@@ -41,5 +37,12 @@ impl<'input, E: ExpectedStringParseError> ParsableInstance<'input, str, E> for &
         let string = parser.advance_len(self.len());
 
         Ok(string)
+    }
+}
+
+impl<E: ExpectedStringParseError> ParsableInstanceError<E> for &str {
+    #[inline]
+    fn error(&self) -> E {
+        E::expected_string(self)
     }
 }

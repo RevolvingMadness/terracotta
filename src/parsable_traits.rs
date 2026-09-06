@@ -4,11 +4,13 @@ use crate::{
     result::{HardParseResult, OptionParseResult, ParseResult, ParseResultTExt},
 };
 
-pub trait Parsable<'input, I: Input + ?Sized, E> {
-    type Output;
-
+pub trait ParsableError<E> {
     #[must_use]
     fn error() -> E;
+}
+
+pub trait Parsable<'input, I: Input + ?Sized, E> {
+    type Output;
 
     fn parse(parser: &mut Parser<'input, I, E>) -> ParseResult<Self::Output>;
 
@@ -24,15 +26,16 @@ pub trait Parsable<'input, I: Input + ?Sized, E> {
     }
 
     #[inline]
-    fn expect(parser: &mut Parser<'input, I, E>) -> HardParseResult<Self::Output> {
+    fn expect(parser: &mut Parser<'input, I, E>) -> HardParseResult<Self::Output>
+    where
+        Self: ParsableError<E>,
+    {
         Self::parse(parser).into_hard_parse_result(parser, Self::error)
     }
 }
 
 pub trait ParsableWithContext<'input, I: Input + ?Sized, E, Context> {
     type Output;
-
-    fn error() -> E;
 
     fn parse_with_context(
         parser: &mut Parser<'input, I, E>,
@@ -58,7 +61,10 @@ pub trait ParsableWithContext<'input, I: Input + ?Sized, E, Context> {
     fn expect_with_context(
         parser: &mut Parser<'input, I, E>,
         context: &mut Context,
-    ) -> HardParseResult<Self::Output> {
+    ) -> HardParseResult<Self::Output>
+    where
+        Self: ParsableError<E>,
+    {
         Self::expect_with_context_renamed(parser, context, Self::error)
     }
 }
@@ -68,10 +74,6 @@ impl<'input, I: Input + ?Sized, E, Context, P: Parsable<'input, I, E>>
 {
     type Output = P::Output;
 
-    fn error() -> E {
-        Self::error()
-    }
-
     fn parse_with_context(
         parser: &mut Parser<'input, I, E>,
         _: &mut Context,
@@ -80,11 +82,13 @@ impl<'input, I: Input + ?Sized, E, Context, P: Parsable<'input, I, E>>
     }
 }
 
-pub trait ParsableInstance<'input, I: Input + ?Sized, E> {
-    type Output;
-
+pub trait ParsableInstanceError<E> {
     #[must_use]
     fn error(&self) -> E;
+}
+
+pub trait ParsableInstance<'input, I: Input + ?Sized, E> {
+    type Output;
 
     fn instance_parse(&self, parser: &mut Parser<'input, I, E>) -> ParseResult<Self::Output>;
 
@@ -96,7 +100,10 @@ pub trait ParsableInstance<'input, I: Input + ?Sized, E> {
     }
 
     #[inline]
-    fn instance_expect(&self, parser: &mut Parser<'input, I, E>) -> HardParseResult<Self::Output> {
+    fn instance_expect(&self, parser: &mut Parser<'input, I, E>) -> HardParseResult<Self::Output>
+    where
+        Self: ParsableInstanceError<E>,
+    {
         self.instance_parse(parser)
             .into_hard_parse_result(parser, || self.error())
     }
@@ -104,9 +111,6 @@ pub trait ParsableInstance<'input, I: Input + ?Sized, E> {
 
 pub trait ParsableInstanceWithContext<'input, I: Input + ?Sized, E, Context> {
     type Output;
-
-    #[must_use]
-    fn error(&self) -> E;
 
     fn instance_parse_with_context(
         &self,
@@ -128,7 +132,10 @@ pub trait ParsableInstanceWithContext<'input, I: Input + ?Sized, E, Context> {
         &self,
         parser: &mut Parser<'input, I, E>,
         context: &mut Context,
-    ) -> HardParseResult<Self::Output> {
+    ) -> HardParseResult<Self::Output>
+    where
+        Self: ParsableInstanceError<E>,
+    {
         self.instance_parse_with_context(parser, context)
             .into_hard_parse_result(parser, || self.error())
     }
@@ -138,10 +145,6 @@ impl<'input, I: Input + ?Sized, E, Context, P: ParsableInstance<'input, I, E>>
     ParsableInstanceWithContext<'input, I, E, Context> for P
 {
     type Output = P::Output;
-
-    fn error(&self) -> E {
-        self.error()
-    }
 
     fn instance_parse_with_context(
         &self,
