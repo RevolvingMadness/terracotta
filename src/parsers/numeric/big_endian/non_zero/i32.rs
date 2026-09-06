@@ -2,6 +2,7 @@ use std::num::NonZeroI32;
 
 use crate::{
     parsable_traits::Parsable,
+    parse_error::{ExpectedNumericParseError, NumericExpectation},
     parser::Parser,
     parsers::numeric::big_endian::{i32::BigEndianI32, non_zero::BigEndianNonZero},
     result::ParseResult,
@@ -9,12 +10,15 @@ use crate::{
 
 pub type BigEndianNonZeroI32 = BigEndianNonZero<i32>;
 
-impl Parsable<'_, [u8]> for BigEndianNonZeroI32 {
-    const NAME: &'static str = "non-zero big-endian signed 32-bit integer";
-
+impl<E: ExpectedNumericParseError> Parsable<'_, [u8], E> for BigEndianNonZeroI32 {
     type Output = NonZeroI32;
 
-    fn parse(parser: &mut Parser<[u8]>) -> ParseResult<Self::Output> {
+    #[inline]
+    fn error() -> E {
+        E::expected_numeric(NumericExpectation::BigEndianNonZeroI32)
+    }
+
+    fn parse(parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
         let start = parser.position();
 
         let value = BigEndianI32::parse(parser)?;
@@ -24,7 +28,7 @@ impl Parsable<'_, [u8]> for BigEndianNonZeroI32 {
 
             return parser.add_error_with_span_result(
                 start.span(end),
-                "Expected a non-zero big-endian signed 32-bit integer".to_owned(),
+                E::expected_numeric(NumericExpectation::BigEndianNonZeroI32),
             );
         };
 
@@ -32,12 +36,15 @@ impl Parsable<'_, [u8]> for BigEndianNonZeroI32 {
     }
 }
 
-impl Parsable<'_, [u8]> for Option<BigEndianNonZeroI32> {
-    const NAME: &'static str = "big-endian signed 32-bit integer";
-
+impl<E: ExpectedNumericParseError> Parsable<'_, [u8], E> for Option<BigEndianNonZeroI32> {
     type Output = Option<NonZeroI32>;
 
-    fn parse(parser: &mut Parser<[u8]>) -> ParseResult<Self::Output> {
+    #[inline]
+    fn error() -> E {
+        E::expected_numeric(NumericExpectation::BigEndianI32)
+    }
+
+    fn parse(parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
         let value = BigEndianI32::parse(parser)?;
 
         Ok(NonZeroI32::new(value))

@@ -1,16 +1,45 @@
 use crate::{
     input::Input,
     parsable_traits::{Parsable, ParsableInstance},
+    parse_error::DefaultParseError,
     parser::Parser,
     result::{ParseFailure, ParseResult},
 };
 
-impl<I: Input<Token = Self> + ?Sized> Parsable<'_, I> for char {
-    const NAME: &'static str = "character";
+trait ExpectedAnyCharacterParseError {
+    #[must_use]
+    fn expected_any_character() -> Self;
+}
 
+impl ExpectedAnyCharacterParseError for String {
+    #[inline]
+    fn expected_any_character() -> Self {
+        "expected any character".to_owned()
+    }
+}
+
+impl ExpectedAnyCharacterParseError for () {
+    #[inline]
+    fn expected_any_character() -> Self {}
+}
+
+impl ExpectedAnyCharacterParseError for DefaultParseError {
+    fn expected_any_character() -> Self {
+        Self::ExpectedAnyCharacter
+    }
+}
+
+impl<I: Input<Token = Self> + ?Sized, E: ExpectedAnyCharacterParseError> Parsable<'_, I, E>
+    for char
+{
     type Output = Self;
 
-    fn parse(parser: &mut Parser<I>) -> ParseResult<Self::Output> {
+    #[inline]
+    fn error() -> E {
+        E::expected_any_character()
+    }
+
+    fn parse(parser: &mut Parser<I, E>) -> ParseResult<Self::Output> {
         let Ok(character) = parser.peek() else {
             return Err(ParseFailure::Soft);
         };
@@ -21,14 +50,37 @@ impl<I: Input<Token = Self> + ?Sized> Parsable<'_, I> for char {
     }
 }
 
-impl<I: Input<Token = Self> + ?Sized> ParsableInstance<'_, I> for char {
+pub trait ExpectedCharacterParseError {
+    #[must_use]
+    fn expected_character(character: char) -> Self;
+}
+
+impl ExpectedCharacterParseError for String {
+    fn expected_character(character: char) -> Self {
+        format!("expected `{}`", character)
+    }
+}
+
+impl ExpectedCharacterParseError for () {
+    fn expected_character(_: char) -> Self {}
+}
+
+impl ExpectedCharacterParseError for DefaultParseError {
+    fn expected_character(character: char) -> Self {
+        Self::ExpectedCharacter(character)
+    }
+}
+
+impl<I: Input<Token = Self> + ?Sized, E: ExpectedCharacterParseError> ParsableInstance<'_, I, E>
+    for char
+{
     type Output = Self;
 
-    fn name(&self) -> String {
-        format!("`{}`", self)
+    fn error(&self) -> E {
+        E::expected_character(*self)
     }
 
-    fn instance_parse(&self, parser: &mut Parser<I>) -> ParseResult<Self::Output> {
+    fn instance_parse(&self, parser: &mut Parser<I, E>) -> ParseResult<Self::Output> {
         let Ok(character) = parser.peek() else {
             return Err(ParseFailure::Soft);
         };

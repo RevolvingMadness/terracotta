@@ -1,13 +1,21 @@
 use std::num::NonZeroI8;
 
-use crate::{parsable_traits::Parsable, parser::Parser, result::ParseResult};
+use crate::{
+    parsable_traits::Parsable,
+    parse_error::{ExpectedNumericParseError, NumericExpectation},
+    parser::Parser,
+    result::ParseResult,
+};
 
-impl Parsable<'_, [u8]> for NonZeroI8 {
-    const NAME: &'static str = "non-zero signed 8-bit integer";
-
+impl<E: ExpectedNumericParseError> Parsable<'_, [u8], E> for NonZeroI8 {
     type Output = Self;
 
-    fn parse(parser: &mut Parser<[u8]>) -> ParseResult<Self::Output> {
+    #[inline]
+    fn error() -> E {
+        E::expected_numeric(NumericExpectation::NonZeroI8)
+    }
+
+    fn parse(parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
         let start = parser.position();
 
         let value = i8::parse(parser)?;
@@ -17,7 +25,7 @@ impl Parsable<'_, [u8]> for NonZeroI8 {
 
             return parser.add_error_with_span_result(
                 start.span(end),
-                "Expected a non-zero signed 8-bit integer".to_owned(),
+                E::expected_numeric(NumericExpectation::NonZeroI8),
             );
         };
 
@@ -25,12 +33,15 @@ impl Parsable<'_, [u8]> for NonZeroI8 {
     }
 }
 
-impl Parsable<'_, [u8]> for Option<NonZeroI8> {
-    const NAME: &'static str = "signed 8-bit integer";
-
+impl<E: ExpectedNumericParseError> Parsable<'_, [u8], E> for Option<NonZeroI8> {
     type Output = Self;
 
-    fn parse(parser: &mut Parser<[u8]>) -> ParseResult<Self::Output> {
+    #[inline]
+    fn error() -> E {
+        E::expected_numeric(NumericExpectation::I8)
+    }
+
+    fn parse(parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
         let value = i8::parse(parser)?;
 
         Ok(NonZeroI8::new(value))

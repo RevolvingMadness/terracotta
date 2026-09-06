@@ -2,6 +2,7 @@ use std::num::NonZeroU16;
 
 use crate::{
     parsable_traits::Parsable,
+    parse_error::{ExpectedNumericParseError, NumericExpectation},
     parser::Parser,
     parsers::numeric::little_endian::{non_zero::LittleEndianNonZero, u16::LittleEndianU16},
     result::ParseResult,
@@ -9,12 +10,15 @@ use crate::{
 
 pub type LittleEndianNonZeroU16 = LittleEndianNonZero<u16>;
 
-impl Parsable<'_, [u8]> for LittleEndianNonZeroU16 {
-    const NAME: &'static str = "non-zero little-endian unsigned 16-bit integer";
-
+impl<E: ExpectedNumericParseError> Parsable<'_, [u8], E> for LittleEndianNonZeroU16 {
     type Output = NonZeroU16;
 
-    fn parse(parser: &mut Parser<[u8]>) -> ParseResult<Self::Output> {
+    #[inline]
+    fn error() -> E {
+        E::expected_numeric(NumericExpectation::LittleEndianNonZeroU16)
+    }
+
+    fn parse(parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
         let start = parser.position();
 
         let value = LittleEndianU16::parse(parser)?;
@@ -24,7 +28,7 @@ impl Parsable<'_, [u8]> for LittleEndianNonZeroU16 {
 
             return parser.add_error_with_span_result(
                 start.span(end),
-                "Expected a non-zero little-endian unsigned 16-bit integer".to_owned(),
+                E::expected_numeric(NumericExpectation::LittleEndianNonZeroU16),
             );
         };
 
@@ -32,12 +36,15 @@ impl Parsable<'_, [u8]> for LittleEndianNonZeroU16 {
     }
 }
 
-impl Parsable<'_, [u8]> for Option<LittleEndianNonZeroU16> {
-    const NAME: &'static str = "little-endian unsigned 16-bit integer";
-
+impl<E: ExpectedNumericParseError> Parsable<'_, [u8], E> for Option<LittleEndianNonZeroU16> {
     type Output = Option<NonZeroU16>;
 
-    fn parse(parser: &mut Parser<[u8]>) -> ParseResult<Self::Output> {
+    #[inline]
+    fn error() -> E {
+        E::expected_numeric(NumericExpectation::LittleEndianU16)
+    }
+
+    fn parse(parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
         let value = LittleEndianU16::parse(parser)?;
 
         Ok(NonZeroU16::new(value))

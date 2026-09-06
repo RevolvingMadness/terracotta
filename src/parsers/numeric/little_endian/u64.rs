@@ -1,16 +1,22 @@
 use crate::{
-    parsable_traits::Parsable, parser::Parser, parsers::numeric::little_endian::LittleEndian,
+    parsable_traits::Parsable,
+    parse_error::{ExpectedNumericParseError, NumericExpectation},
+    parser::Parser,
+    parsers::numeric::little_endian::LittleEndian,
     result::ParseResult,
 };
 
 pub type LittleEndianU64 = LittleEndian<u64>;
 
-impl Parsable<'_, [u8]> for LittleEndianU64 {
-    const NAME: &'static str = "little-endian unsigned 64-bit integer";
-
+impl<E: ExpectedNumericParseError> Parsable<'_, [u8], E> for LittleEndianU64 {
     type Output = u64;
 
-    fn parse(parser: &mut Parser<[u8]>) -> ParseResult<Self::Output> {
+    #[inline]
+    fn error() -> E {
+        E::expected_numeric(NumericExpectation::LittleEndianU64)
+    }
+
+    fn parse(parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
         let bytes = parser.advance_len_exact(8)?;
 
         let bytes = <[u8; 8] as TryFrom<&[u8]>>::try_from(bytes).unwrap();

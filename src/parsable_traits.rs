@@ -4,117 +4,119 @@ use crate::{
     result::{HardParseResult, OptionParseResult, ParseResult, ParseResultTExt},
 };
 
-pub trait Parsable<'input, I: Input + ?Sized> {
-    const NAME: &'static str;
-
+pub trait Parsable<'input, I: Input + ?Sized, E> {
     type Output;
 
-    fn parse(parser: &mut Parser<'input, I>) -> ParseResult<Self::Output>;
+    #[must_use]
+    fn error() -> E;
 
-    fn try_parse(parser: &mut Parser<'input, I>) -> OptionParseResult<Self::Output> {
+    fn parse(parser: &mut Parser<'input, I, E>) -> ParseResult<Self::Output>;
+
+    fn try_parse(parser: &mut Parser<'input, I, E>) -> OptionParseResult<Self::Output> {
         Self::parse(parser).into_option_parse_result()
     }
 
     fn expect_renamed(
-        parser: &mut Parser<'input, I>,
-        expected: &str,
+        parser: &mut Parser<'input, I, E>,
+        error_fn: impl FnOnce() -> E,
     ) -> HardParseResult<Self::Output> {
-        Self::parse(parser).into_hard_parse_result(parser, || format!("expected {}", expected))
+        Self::parse(parser).into_hard_parse_result(parser, error_fn)
     }
 
     #[inline]
-    fn expect(parser: &mut Parser<'input, I>) -> HardParseResult<Self::Output> {
-        Self::expect_renamed(parser, Self::NAME)
+    fn expect(parser: &mut Parser<'input, I, E>) -> HardParseResult<Self::Output> {
+        Self::parse(parser).into_hard_parse_result(parser, Self::error)
     }
 }
 
-pub trait ParsableWithContext<'input, I: Input + ?Sized, Context> {
-    const NAME: &'static str;
-
+pub trait ParsableWithContext<'input, I: Input + ?Sized, E, Context> {
     type Output;
 
+    fn error() -> E;
+
     fn parse_with_context(
-        parser: &mut Parser<'input, I>,
+        parser: &mut Parser<'input, I, E>,
         context: &mut Context,
     ) -> ParseResult<Self::Output>;
 
     fn try_parse_with_context(
-        parser: &mut Parser<'input, I>,
+        parser: &mut Parser<'input, I, E>,
         context: &mut Context,
     ) -> OptionParseResult<Self::Output> {
         Self::parse_with_context(parser, context).into_option_parse_result()
     }
 
     fn expect_with_context_renamed(
-        parser: &mut Parser<'input, I>,
+        parser: &mut Parser<'input, I, E>,
         context: &mut Context,
-        expected: &str,
+        error_fn: impl FnOnce() -> E,
     ) -> HardParseResult<Self::Output> {
-        Self::parse_with_context(parser, context)
-            .into_hard_parse_result(parser, || format!("expected {}", expected))
+        Self::parse_with_context(parser, context).into_hard_parse_result(parser, error_fn)
     }
 
     #[inline]
     fn expect_with_context(
-        parser: &mut Parser<'input, I>,
+        parser: &mut Parser<'input, I, E>,
         context: &mut Context,
     ) -> HardParseResult<Self::Output> {
-        Self::expect_with_context_renamed(parser, context, Self::NAME)
+        Self::expect_with_context_renamed(parser, context, Self::error)
     }
 }
 
-impl<'input, I: Input + ?Sized, Context, P: Parsable<'input, I>>
-    ParsableWithContext<'input, I, Context> for P
+impl<'input, I: Input + ?Sized, E, Context, P: Parsable<'input, I, E>>
+    ParsableWithContext<'input, I, E, Context> for P
 {
-    const NAME: &'static str = P::NAME;
-
     type Output = P::Output;
 
+    fn error() -> E {
+        Self::error()
+    }
+
     fn parse_with_context(
-        parser: &mut Parser<'input, I>,
+        parser: &mut Parser<'input, I, E>,
         _: &mut Context,
     ) -> ParseResult<Self::Output> {
         P::parse(parser)
     }
 }
 
-pub trait ParsableInstance<'input, I: Input + ?Sized> {
+pub trait ParsableInstance<'input, I: Input + ?Sized, E> {
     type Output;
 
     #[must_use]
-    fn name(&self) -> String;
+    fn error(&self) -> E;
 
-    fn instance_parse(&self, parser: &mut Parser<'input, I>) -> ParseResult<Self::Output>;
+    fn instance_parse(&self, parser: &mut Parser<'input, I, E>) -> ParseResult<Self::Output>;
 
     fn instance_try_parse(
         &self,
-        parser: &mut Parser<'input, I>,
+        parser: &mut Parser<'input, I, E>,
     ) -> OptionParseResult<Self::Output> {
         self.instance_parse(parser).into_option_parse_result()
     }
 
     #[inline]
-    fn instance_expect(&self, parser: &mut Parser<'input, I>) -> HardParseResult<Self::Output> {
+    fn instance_expect(&self, parser: &mut Parser<'input, I, E>) -> HardParseResult<Self::Output> {
         self.instance_parse(parser)
-            .into_hard_parse_result(parser, || format!("expected {}", self.name()))
+            .into_hard_parse_result(parser, || self.error())
     }
 }
 
-pub trait ParsableInstanceWithContext<'input, I: Input + ?Sized, Context> {
+pub trait ParsableInstanceWithContext<'input, I: Input + ?Sized, E, Context> {
     type Output;
 
     #[must_use]
-    fn name(&self) -> String;
+    fn error(&self) -> E;
 
     fn instance_parse_with_context(
         &self,
-        parser: &mut Parser<'input, I>,
+        parser: &mut Parser<'input, I, E>,
         context: &mut Context,
     ) -> ParseResult<Self::Output>;
 
     fn instance_try_parse_with_context(
         &self,
-        parser: &mut Parser<'input, I>,
+        parser: &mut Parser<'input, I, E>,
         context: &mut Context,
     ) -> OptionParseResult<Self::Output> {
         self.instance_parse_with_context(parser, context)
@@ -124,26 +126,26 @@ pub trait ParsableInstanceWithContext<'input, I: Input + ?Sized, Context> {
     #[inline]
     fn instance_expect_with_context(
         &self,
-        parser: &mut Parser<'input, I>,
+        parser: &mut Parser<'input, I, E>,
         context: &mut Context,
     ) -> HardParseResult<Self::Output> {
         self.instance_parse_with_context(parser, context)
-            .into_hard_parse_result(parser, || format!("expected {}", self.name()))
+            .into_hard_parse_result(parser, || self.error())
     }
 }
 
-impl<'input, I: Input + ?Sized, Context, P: ParsableInstance<'input, I>>
-    ParsableInstanceWithContext<'input, I, Context> for P
+impl<'input, I: Input + ?Sized, E, Context, P: ParsableInstance<'input, I, E>>
+    ParsableInstanceWithContext<'input, I, E, Context> for P
 {
     type Output = P::Output;
 
-    fn name(&self) -> String {
-        self.name()
+    fn error(&self) -> E {
+        self.error()
     }
 
     fn instance_parse_with_context(
         &self,
-        parser: &mut Parser<'input, I>,
+        parser: &mut Parser<'input, I, E>,
         _: &mut Context,
     ) -> ParseResult<Self::Output> {
         self.instance_parse(parser)

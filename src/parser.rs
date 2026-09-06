@@ -6,28 +6,6 @@ use crate::{
     span::Span,
 };
 
-#[derive(Debug)]
-pub struct FullParseResult<Output> {
-    pub errors: Vec<ParseError>,
-    pub output: Option<Output>,
-}
-
-impl<Output> FullParseResult<Output> {
-    #[track_caller]
-    pub fn unwrap(self) -> Output {
-        let Some(output) = self.output else {
-            panic!("called `FullParseResult::unwrap()` on a `None` output full parse result")
-        };
-
-        assert!(
-            self.errors.is_empty(),
-            "called `FullParseResult::unwrap()` on a non-zero error full parse result"
-        );
-
-        output
-    }
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ParserPosition(pub(crate) usize);
 
@@ -57,26 +35,14 @@ impl ParserPosition {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ParseError {
-    pub span: Span,
-    pub message: String,
-}
-
-impl Display for ParseError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{}: {}", self.span, self.message)
-    }
-}
-
 #[derive(Debug)]
-pub struct Parser<'input, I: Input + ?Sized> {
+pub struct Parser<'input, I: Input + ?Sized, E> {
     input: &'input I,
     position: usize,
-    errors: Vec<ParseError>,
+    errors: Vec<(Span, E)>,
 }
 
-impl<'input, I: Input + ?Sized> Parser<'input, I> {
+impl<'input, I: Input + ?Sized, E> Parser<'input, I, E> {
     #[must_use]
     pub const fn new(input: &'input I) -> Self {
         Self {
@@ -86,52 +52,46 @@ impl<'input, I: Input + ?Sized> Parser<'input, I> {
         }
     }
 
-    pub fn add_error_with_span<S: Into<Span>, M: Display>(
-        &mut self,
-        span: S,
-        message: M,
-    ) -> HardParseFailure {
+    pub fn add_error_with_span<S: Into<Span>>(&mut self, span: S, error: E) -> HardParseFailure {
         let span = span.into();
 
-        let message = message.to_string();
-
-        self.errors.push(ParseError { span, message });
+        self.errors.push((span, error));
 
         HardParseFailure(())
     }
 
     #[inline]
-    pub fn add_error_with_span_result<S: Into<Span>, M: Display, T>(
+    pub fn add_error_with_span_result<S: Into<Span>, T>(
         &mut self,
         span: S,
-        message: M,
+        error: E,
     ) -> ParseResult<T> {
-        Err(ParseFailure::Hard(self.add_error_with_span(span, message)))
+        Err(ParseFailure::Hard(self.add_error_with_span(span, error)))
     }
 
     #[inline]
-    pub fn add_error_with_span_hard_result<S: Into<Span>, M: Display, T>(
+    pub fn add_error_with_span_hard_result<S: Into<Span>, T>(
         &mut self,
         span: S,
-        message: M,
+        error: E,
     ) -> HardParseResult<T> {
-        Err(self.add_error_with_span(span, message))
+        Err(self.add_error_with_span(span, error))
     }
 
     #[inline]
-    pub fn add_error<M: Display>(&mut self, message: M) -> HardParseFailure {
+    pub fn add_error(&mut self, error: E) -> HardParseFailure {
         let character_len = self.peek().map_or(0, |token| token.len());
 
         let start = ParserPosition(self.position);
 
         let end = ParserPosition(self.position + character_len);
 
-        self.add_error_with_span(start..end, message)
+        self.add_error_with_span(start..end, error)
     }
 
     #[inline]
-    pub fn add_error_result<M: Display, T>(&mut self, message: M) -> ParseResult<T> {
-        Err(ParseFailure::Hard(self.add_error(message)))
+    pub fn add_error_result<T>(&mut self, error: E) -> ParseResult<T> {
+        Err(ParseFailure::Hard(self.add_error(error)))
     }
 
     #[inline]
@@ -224,7 +184,7 @@ impl<'input, I: Input + ?Sized> Parser<'input, I> {
     }
 
     #[inline]
-    pub fn advance_token(&mut self, token: &impl Token) {
+    pub fn advance_token(&mut self, token: &I::Token) {
         self.position += token.len();
     }
 
@@ -266,6 +226,12 @@ impl<'input, I: Input + ?Sized> Parser<'input, I> {
     }
 
     #[inline]
+    #[must_use]
+    pub fn is_at_end(&self) -> bool {
+        self.position() >= self.end_position()
+    }
+
+    #[inline]
     pub const fn restore(&mut self, ParserPosition(position): ParserPosition) {
         self.position = position;
     }
@@ -296,7 +262,7 @@ impl<'input, I: Input + ?Sized> Parser<'input, I> {
 
     #[inline]
     #[must_use]
-    pub fn finish(self) -> Vec<ParseError> {
+    pub fn finish(self) -> Vec<(Span, E)> {
         self.errors
     }
 
@@ -340,7 +306,7 @@ mod tests {
 
     #[test]
     fn parse_take_while() {
-        let mut parser = Parser::new("aaab");
+        let mut parser = Parser::<_, String>::new("aaab");
 
         assert_eq!(parser.take_while(|character| character == 'a'), Ok("aaa"));
         assert_eq!(parser.remaining(), "b");
@@ -348,7 +314,7 @@ mod tests {
 
     #[test]
     fn parse_take_until() {
-        let mut parser = Parser::new("abcdef");
+        let mut parser = Parser::<_, String>::new("abcdef");
 
         assert_eq!(parser.take_until(|character| character == 'd'), Ok("abc"));
         assert_eq!(parser.remaining(), "def");

@@ -41,10 +41,10 @@ pub type ParseResult<T> = Result<T, ParseFailure>;
 pub trait ParseResultTExt<T> {
     fn into_option_parse_result(self) -> OptionParseResult<T>;
 
-    fn into_hard_parse_result<I: Input + ?Sized>(
+    fn into_hard_parse_result<I: Input + ?Sized, E>(
         self,
-        parser: &mut Parser<I>,
-        message: impl FnOnce() -> String,
+        parser: &mut Parser<I, E>,
+        error_fn: impl FnOnce() -> E,
     ) -> HardParseResult<T>;
 }
 
@@ -57,17 +57,17 @@ impl<T> ParseResultTExt<T> for ParseResult<T> {
         }
     }
 
-    fn into_hard_parse_result<I: Input + ?Sized>(
+    fn into_hard_parse_result<I: Input + ?Sized, E>(
         self,
-        parser: &mut Parser<I>,
-        message: impl FnOnce() -> String,
+        parser: &mut Parser<I, E>,
+        error_fn: impl FnOnce() -> E,
     ) -> HardParseResult<T> {
         match self {
             Ok(value) => Ok(value),
             Err(ParseFailure::Soft) => {
-                let message = message();
+                let error = error_fn();
 
-                let failure = parser.add_error(message);
+                let failure = parser.add_error(error);
 
                 Err(failure)
             }

@@ -3,121 +3,127 @@ use crate::{
     parsable_traits::{
         Parsable, ParsableInstance, ParsableInstanceWithContext, ParsableWithContext,
     },
-    parser::{FullParseResult, Parser},
+    parse_error::ExpectedEndOfInputParseError,
+    parser::Parser,
+    result::HardParseResult,
+    span::Span,
 };
 
-pub trait InputExt<'input>: Input {
-    fn parse_fully_with_context<P: ParsableWithContext<'input, Self, Context>, Context>(
-        &'input self,
-        context: &mut Context,
-        allow_trailing: bool,
-    ) -> FullParseResult<P::Output>;
+fn parse_fully<'input, I: Input + ?Sized, T, E: ExpectedEndOfInputParseError>(
+    input: &'input I,
+    parse: impl FnOnce(&mut Parser<'input, I, E>) -> HardParseResult<T>,
+) -> Result<T, Vec<(Span, E)>> {
+    let mut parser = Parser::new(input);
 
-    fn parse_fully<P: Parsable<'input, Self>>(
-        &'input self,
-        allow_trailing: bool,
-    ) -> FullParseResult<P::Output>;
+    let result = parse(&mut parser);
 
-    fn parse_instance_fully_with_context<
-        P: ParsableInstanceWithContext<'input, Self, Context>,
-        Context,
-    >(
-        &'input self,
-        parsable: &P,
-        context: &mut Context,
-        allow_trailing: bool,
-    ) -> FullParseResult<P::Output>;
+    if parser.has_no_errors() && !parser.is_at_end() {
+        parser.add_error(E::expected_end_of_input());
+    }
 
-    fn parse_instance_fully<P: ParsableInstance<'input, Self>>(
-        &'input self,
-        parsable: &P,
-        allow_trailing: bool,
-    ) -> FullParseResult<P::Output>;
+    let errors = parser.finish();
+
+    result.map_err(|_| errors)
 }
 
-impl<'input, I: Input + ?Sized> InputExt<'input> for I {
-    fn parse_fully_with_context<P: ParsableWithContext<'input, Self, Context>, Context>(
+fn parse_fully_allow_trailing<'input, I: Input + ?Sized, T, E>(
+    input: &'input I,
+    parse: impl FnOnce(&mut Parser<'input, I, E>) -> HardParseResult<T>,
+) -> Result<T, Vec<(Span, E)>> {
+    let mut parser = Parser::new(input);
+
+    let result = parse(&mut parser);
+
+    let errors = parser.finish();
+
+    result.map_err(|_| errors)
+}
+
+pub trait InputExt<'input>: Input {
+    #[inline]
+    fn parse_fully_with_context<
+        E: ExpectedEndOfInputParseError,
+        P: ParsableWithContext<'input, Self, E, Context>,
+        Context,
+    >(
         &'input self,
         context: &mut Context,
-        allow_trailing: bool,
-    ) -> FullParseResult<P::Output> {
-        let mut parser = Parser::new(self);
-
-        let result = P::expect_with_context(&mut parser, context);
-
-        if !allow_trailing && parser.has_no_errors() && parser.position() < parser.end_position() {
-            parser.add_error("Expected end of input".to_owned());
-        }
-
-        let output = result.ok();
-
-        let errors = parser.finish();
-
-        FullParseResult { errors, output }
+    ) -> Result<P::Output, Vec<(Span, E)>> {
+        parse_fully(self, |parser| P::expect_with_context(parser, context))
     }
 
     #[inline]
-    fn parse_fully<P: Parsable<'input, Self>>(
+    fn parse_fully_with_context_allow_trailing<
+        E,
+        P: ParsableWithContext<'input, Self, E, Context>,
+        Context,
+    >(
         &'input self,
-        allow_trailing: bool,
-    ) -> FullParseResult<P::Output> {
-        let mut parser = Parser::new(self);
-
-        let result = P::expect(&mut parser);
-
-        if !allow_trailing && parser.has_no_errors() && parser.position() < parser.end_position() {
-            parser.add_error("Expected end of input".to_owned());
-        }
-
-        let output = result.ok();
-
-        let errors = parser.finish();
-
-        FullParseResult { errors, output }
+        context: &mut Context,
+    ) -> Result<P::Output, Vec<(Span, E)>> {
+        parse_fully_allow_trailing(self, |parser| P::expect_with_context(parser, context))
     }
 
+    #[inline]
+    fn parse_fully<E: ExpectedEndOfInputParseError, P: Parsable<'input, Self, E>>(
+        &'input self,
+    ) -> Result<P::Output, Vec<(Span, E)>> {
+        parse_fully(self, |parser| P::expect(parser))
+    }
+
+    #[inline]
+    fn parse_fully_allow_trailing<E, P: Parsable<'input, Self, E>>(
+        &'input self,
+    ) -> Result<P::Output, Vec<(Span, E)>> {
+        parse_fully_allow_trailing(self, |parser| P::expect(parser))
+    }
+
+    #[inline]
     fn parse_instance_fully_with_context<
-        P: ParsableInstanceWithContext<'input, Self, Context>,
+        E: ExpectedEndOfInputParseError,
+        P: ParsableInstanceWithContext<'input, Self, E, Context>,
         Context,
     >(
         &'input self,
         parsable: &P,
         context: &mut Context,
-        allow_trailing: bool,
-    ) -> FullParseResult<P::Output> {
-        let mut parser = Parser::new(self);
-
-        let result = parsable.instance_expect_with_context(&mut parser, context);
-
-        if !allow_trailing && parser.has_no_errors() && parser.position() < parser.end_position() {
-            parser.add_error("Expected end of input".to_owned());
-        }
-
-        let output = result.ok();
-
-        let errors = parser.finish();
-
-        FullParseResult { errors, output }
+    ) -> Result<P::Output, Vec<(Span, E)>> {
+        parse_fully(self, |parser| {
+            parsable.instance_expect_with_context(parser, context)
+        })
     }
 
     #[inline]
-    fn parse_instance_fully<P: ParsableInstance<'input, Self>>(
+    fn parse_instance_fully_with_context_allow_trailing<
+        E,
+        P: ParsableInstanceWithContext<'input, Self, E, Context>,
+        Context,
+    >(
         &'input self,
         parsable: &P,
-        allow_trailing: bool,
-    ) -> FullParseResult<P::Output> {
-        let mut parser = Parser::new(self);
+        context: &mut Context,
+    ) -> Result<P::Output, Vec<(Span, E)>> {
+        parse_fully_allow_trailing(self, |parser| {
+            parsable.instance_expect_with_context(parser, context)
+        })
+    }
 
-        let result = parsable.instance_expect(&mut parser);
+    #[inline]
+    fn parse_instance_fully<
+        E: ExpectedEndOfInputParseError,
+        P: ParsableInstance<'input, Self, E>,
+    >(
+        &'input self,
+        parsable: &P,
+    ) -> Result<P::Output, Vec<(Span, E)>> {
+        parse_fully(self, |parser| parsable.instance_expect(parser))
+    }
 
-        if !allow_trailing && parser.has_no_errors() && parser.position() < parser.end_position() {
-            parser.add_error("Expected end of input".to_owned());
-        }
-
-        let output = result.ok();
-
-        let errors = parser.finish();
-
-        FullParseResult { errors, output }
+    #[inline]
+    fn parse_instance_fully_allow_trailing<E, P: ParsableInstance<'input, Self, E>>(
+        &'input self,
+        parsable: &P,
+    ) -> Result<P::Output, Vec<(Span, E)>> {
+        parse_fully_allow_trailing(self, |parser| parsable.instance_expect(parser))
     }
 }

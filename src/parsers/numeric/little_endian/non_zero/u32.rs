@@ -2,6 +2,7 @@ use std::num::NonZeroU32;
 
 use crate::{
     parsable_traits::Parsable,
+    parse_error::{ExpectedNumericParseError, NumericExpectation},
     parser::Parser,
     parsers::numeric::little_endian::{non_zero::LittleEndianNonZero, u32::LittleEndianU32},
     result::ParseResult,
@@ -9,12 +10,15 @@ use crate::{
 
 pub type LittleEndianNonZeroU32 = LittleEndianNonZero<u32>;
 
-impl Parsable<'_, [u8]> for LittleEndianNonZeroU32 {
-    const NAME: &'static str = "non-zero little-endian unsigned 32-bit integer";
-
+impl<E: ExpectedNumericParseError> Parsable<'_, [u8], E> for LittleEndianNonZeroU32 {
     type Output = NonZeroU32;
 
-    fn parse(parser: &mut Parser<[u8]>) -> ParseResult<Self::Output> {
+    #[inline]
+    fn error() -> E {
+        E::expected_numeric(NumericExpectation::LittleEndianNonZeroU32)
+    }
+
+    fn parse(parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
         let start = parser.position();
 
         let value = LittleEndianU32::parse(parser)?;
@@ -24,7 +28,7 @@ impl Parsable<'_, [u8]> for LittleEndianNonZeroU32 {
 
             return parser.add_error_with_span_result(
                 start.span(end),
-                "Expected a non-zero little-endian unsigned 32-bit integer".to_owned(),
+                E::expected_numeric(NumericExpectation::LittleEndianNonZeroU32),
             );
         };
 
@@ -32,12 +36,15 @@ impl Parsable<'_, [u8]> for LittleEndianNonZeroU32 {
     }
 }
 
-impl Parsable<'_, [u8]> for Option<LittleEndianNonZeroU32> {
-    const NAME: &'static str = "little-endian unsigned 32-bit integer";
-
+impl<E: ExpectedNumericParseError> Parsable<'_, [u8], E> for Option<LittleEndianNonZeroU32> {
     type Output = Option<NonZeroU32>;
 
-    fn parse(parser: &mut Parser<[u8]>) -> ParseResult<Self::Output> {
+    #[inline]
+    fn error() -> E {
+        E::expected_numeric(NumericExpectation::LittleEndianU32)
+    }
+
+    fn parse(parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
         let value = LittleEndianU32::parse(parser)?;
 
         Ok(NonZeroU32::new(value))
