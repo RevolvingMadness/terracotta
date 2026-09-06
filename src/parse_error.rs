@@ -140,7 +140,7 @@ impl Display for NumericExpectation {
 
 pub trait ExpectedNumericParseError {
     #[must_use]
-    fn expected_numeric(numeric_expectation: NumericExpectation) -> Self;
+    fn expected_numeric(expectation: NumericExpectation) -> Self;
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

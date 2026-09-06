@@ -127,3 +127,5 @@ pub trait InputExt<'input>: Input {
         parse_fully_allow_trailing(self, |parser| parsable.instance_expect(parser))
     }
 }
+
+impl<I: Input + ?Sized> InputExt<'_> for I {}
