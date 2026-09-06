@@ -8,7 +8,7 @@ use crate::{
 
 pub type LittleEndianF64 = LittleEndian<f64>;
 
-impl<E: ExpectedNumericParseError> Parsable<'_, [u8], E> for LittleEndianF64 {
+impl<E> Parsable<'_, [u8], E> for LittleEndianF64 {
     type Output = f64;
 
     fn parse(parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {

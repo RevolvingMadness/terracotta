@@ -26,7 +26,7 @@ impl ExpectedStringParseError for DefaultParseError {
     }
 }
 
-impl<'input, E: ExpectedStringParseError> ParsableInstance<'input, str, E> for &'input str {
+impl<'input, E> ParsableInstance<'input, str, E> for &'input str {
     type Output = Self;
 
     fn instance_parse(&self, parser: &mut Parser<'input, str, E>) -> ParseResult<Self::Output> {

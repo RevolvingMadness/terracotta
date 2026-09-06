@@ -2,10 +2,7 @@ use std::num::NonZeroI16;
 
 use crate::{
     parsable_traits::{Parsable, ParsableError},
-    parse_error::{
-        ExpectedNumericParseError,
-        NumericExpectation::{self},
-    },
+    parse_error::{ExpectedNumericParseError, NumericExpectation},
     parser::Parser,
     parsers::numeric::big_endian::{i16::BigEndianI16, non_zero::BigEndianNonZero},
     result::ParseResult,

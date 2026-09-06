@@ -8,7 +8,7 @@ use crate::{
 
 pub type BigEndianF32 = BigEndian<f32>;
 
-impl<E: ExpectedNumericParseError> Parsable<'_, [u8], E> for BigEndianF32 {
+impl<E> Parsable<'_, [u8], E> for BigEndianF32 {
     type Output = f32;
 
     fn parse(parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {

@@ -269,18 +269,16 @@ impl<'input, I: Input + ?Sized, E> Parser<'input, I, E> {
     #[inline]
     pub fn take_until<F>(&mut self, mut predicate: F) -> ParseResult<&'input I>
     where
-        F: FnMut(I::Token) -> bool,
+        F: FnMut(&I::Token) -> bool,
     {
         let start = self.position();
 
         while let Ok(token) = self.peek() {
-            let token_len = token.len();
-
-            if predicate(token) {
+            if predicate(&token) {
                 break;
             }
 
-            self.position += token_len;
+            self.advance_token(&token);
         }
 
         let end = self.position();
@@ -294,7 +292,7 @@ impl<'input, I: Input + ?Sized, E> Parser<'input, I, E> {
 
     pub fn take_while<F>(&mut self, mut predicate: F) -> ParseResult<&'input I>
     where
-        F: FnMut(I::Token) -> bool,
+        F: FnMut(&I::Token) -> bool,
     {
         self.take_until(|token| !predicate(token))
     }
@@ -308,7 +306,7 @@ mod tests {
     fn parse_take_while() {
         let mut parser = Parser::<_, String>::new("aaab");
 
-        assert_eq!(parser.take_while(|character| character == 'a'), Ok("aaa"));
+        assert_eq!(parser.take_while(|character| *character == 'a'), Ok("aaa"));
         assert_eq!(parser.remaining(), "b");
     }
 
@@ -316,7 +314,7 @@ mod tests {
     fn parse_take_until() {
         let mut parser = Parser::<_, String>::new("abcdef");
 
-        assert_eq!(parser.take_until(|character| character == 'd'), Ok("abc"));
+        assert_eq!(parser.take_until(|character| *character == 'd'), Ok("abc"));
         assert_eq!(parser.remaining(), "def");
     }
 }
