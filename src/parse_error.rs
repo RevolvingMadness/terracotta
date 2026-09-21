@@ -36,16 +36,19 @@ pub trait ExpectedParseError {
 }
 
 impl ExpectedParseError for String {
+    #[inline]
     fn expected(expected: Cow<'_, str>) -> Self {
         format!("expected {}", expected)
     }
 }
 
 impl ExpectedParseError for () {
+    #[inline]
     fn expected(_: Cow<'_, str>) -> Self {}
 }
 
 impl ExpectedParseError for DefaultParseError {
+    #[inline]
     fn expected(expected: Cow<'_, str>) -> Self {
         Self::Expected(expected.into_owned())
     }

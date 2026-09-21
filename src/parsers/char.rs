@@ -26,6 +26,7 @@ impl ExpectedAnyCharacterParseError for () {
 }
 
 impl ExpectedAnyCharacterParseError for DefaultParseError {
+    #[inline]
     fn expected_any_character() -> Self {
         Self::ExpectedAnyCharacter
     }
@@ -58,16 +59,19 @@ pub trait ExpectedCharacterParseError {
 }
 
 impl ExpectedCharacterParseError for String {
+    #[inline]
     fn expected_character(character: char) -> Self {
         format!("expected `{}`", character)
     }
 }
 
 impl ExpectedCharacterParseError for () {
+    #[inline]
     fn expected_character(_: char) -> Self {}
 }
 
 impl ExpectedCharacterParseError for DefaultParseError {
+    #[inline]
     fn expected_character(character: char) -> Self {
         Self::ExpectedCharacter(character)
     }

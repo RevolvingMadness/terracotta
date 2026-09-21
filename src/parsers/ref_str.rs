@@ -13,16 +13,19 @@ pub trait ExpectedStringParseError {
 }
 
 impl ExpectedStringParseError for String {
+    #[inline]
     fn expected_string(expected: &str) -> Self {
         format!("expected `{}`", expected)
     }
 }
 
 impl ExpectedStringParseError for () {
+    #[inline]
     fn expected_string(_: &str) -> Self {}
 }
 
 impl ExpectedStringParseError for DefaultParseError {
+    #[inline]
     fn expected_string(expected: &str) -> Self {
         Self::ExpectedString(expected.to_owned())
     }
