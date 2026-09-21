@@ -1,6 +1,9 @@
-use std::{
-    borrow::Cow,
-    fmt::{self, Display, Formatter},
+use core::fmt::{self, Display, Formatter};
+
+use alloc::{
+    borrow::{Cow, ToOwned},
+    format,
+    string::String,
 };
 
 pub trait ExpectedEndOfInputParseError {

@@ -1,4 +1,6 @@
-use std::fmt::{self, Display, Formatter};
+use core::fmt::{self, Display, Formatter};
+
+use alloc::vec::Vec;
 
 use crate::{
     input::{Input, token::Token},
@@ -300,6 +302,8 @@ impl<'input, I: Input + ?Sized, E> Parser<'input, I, E> {
 
 #[cfg(test)]
 mod tests {
+    use alloc::string::String;
+
     use crate::parser::Parser;
 
     #[test]

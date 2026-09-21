@@ -1,4 +1,4 @@
-use std::{
+use core::{
     fmt::{self, Display, Formatter},
     ops::{Bound, Range, RangeBounds},
 };

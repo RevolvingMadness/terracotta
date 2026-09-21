@@ -1,4 +1,4 @@
-use std::num::NonZero;
+use core::num::NonZero;
 
 use crate::parsers::numeric::big_endian::BigEndian;
 

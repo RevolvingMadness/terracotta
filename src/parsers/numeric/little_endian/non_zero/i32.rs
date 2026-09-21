@@ -1,4 +1,4 @@
-use std::num::NonZeroI32;
+use core::num::NonZeroI32;
 
 use crate::{
     parsable_traits::{Parsable, ParsableError},
