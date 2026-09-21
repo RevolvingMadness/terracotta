@@ -9,3 +9,4 @@ pub mod parser;
 pub mod parsers;
 pub mod result;
 pub mod span;
+pub mod spanned;

@@ -31,10 +31,10 @@ impl ExpectedStringParseError for DefaultParseError {
     }
 }
 
-impl<'input, E> ParsableInstance<'input, str, E> for &'input str {
-    type Output = Self;
+impl<'input, E> ParsableInstance<'input, Self, E> for str {
+    type Output = &'input Self;
 
-    fn instance_parse(&self, parser: &mut Parser<'input, str, E>) -> ParseResult<Self::Output> {
+    fn instance_parse(&self, parser: &mut Parser<'input, Self, E>) -> ParseResult<Self::Output> {
         if !parser.slice_starts_with(parser.position(), self) {
             return Err(ParseFailure::Soft);
         }
