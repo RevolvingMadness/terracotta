@@ -45,7 +45,7 @@ impl<'input, E> ParsableInstance<'input, Self, E> for str {
     }
 }
 
-impl<E: ExpectedStringParseError> ParsableInstanceError<E> for &str {
+impl<E: ExpectedStringParseError> ParsableInstanceError<E> for str {
     #[inline]
     fn error(&self) -> E {
         E::expected_string(self)

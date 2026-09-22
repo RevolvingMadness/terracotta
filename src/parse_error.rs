@@ -163,9 +163,9 @@ impl Display for DefaultParseError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             Self::ExpectedEndOfInput => write!(f, "expected end of input"),
-            Self::ExpectedString(string) => write!(f, "expected `{}`", string),
+            Self::ExpectedString(string) => write!(f, r#"expected "{}""#, string),
             Self::ExpectedAnyCharacter => write!(f, "expected any character"),
-            Self::ExpectedCharacter(character) => write!(f, "expected `{}`", character),
+            Self::ExpectedCharacter(character) => write!(f, "expected '{}'", character),
             Self::Expected(expectation) => write!(f, "expected {}", expectation),
             Self::NumericExpectation(expectation) => write!(f, "expected a {}", expectation),
         }

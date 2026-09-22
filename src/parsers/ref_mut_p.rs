@@ -6,7 +6,7 @@ use crate::{
 };
 
 impl<'input, I: Input + ?Sized, E, P: Parsable<'input, I, E> + ?Sized> Parsable<'input, I, E>
-    for &P
+    for &mut P
 {
     type Output = P::Output;
 
@@ -17,7 +17,7 @@ impl<'input, I: Input + ?Sized, E, P: Parsable<'input, I, E> + ?Sized> Parsable<
 }
 
 impl<'input, I: Input + ?Sized, E, P: ParsableInstance<'input, I, E> + ?Sized>
-    ParsableInstance<'input, I, E> for &P
+    ParsableInstance<'input, I, E> for &mut P
 {
     type Output = P::Output;
 

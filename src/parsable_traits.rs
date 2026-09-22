@@ -108,7 +108,7 @@ pub trait ParsableInstance<'input, I: Input + ?Sized, E> {
 
     fn instance_parse(&self, parser: &mut Parser<'input, I, E>) -> ParseResult<Self::Output>;
 
-    fn instance_try_parse(
+    fn try_instance_parse(
         &self,
         parser: &mut Parser<'input, I, E>,
     ) -> OptionParseResult<Self::Output> {
@@ -151,7 +151,7 @@ pub trait ParsableInstanceWithContext<'input, I: Input + ?Sized, E, Context> {
         context: &mut Context,
     ) -> ParseResult<Self::Output>;
 
-    fn instance_try_parse_with_context(
+    fn try_instance_parse_with_context(
         &self,
         parser: &mut Parser<'input, I, E>,
         context: &mut Context,
