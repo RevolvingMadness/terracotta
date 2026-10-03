@@ -9,7 +9,7 @@ impl<E> Parsable<'_, [u8], E> for i8 {
     type Output = Self;
 
     fn parse(parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
-        let value = parser.advance()?;
+        let value = parser.advance_result()?;
 
         Ok(value as Self)
     }

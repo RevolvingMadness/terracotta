@@ -23,7 +23,7 @@ impl ExpectedEndOfInputParseError for () {
     fn expected_end_of_input() -> Self {}
 }
 
-impl ExpectedEndOfInputParseError for DefaultParseError {
+impl<T> ExpectedEndOfInputParseError for DefaultParseError<T> {
     #[inline]
     fn expected_end_of_input() -> Self {
         Self::ExpectedEndOfInput
@@ -47,7 +47,7 @@ impl ExpectedParseError for () {
     fn expected(_: Cow<'_, str>) -> Self {}
 }
 
-impl ExpectedParseError for DefaultParseError {
+impl<T> ExpectedParseError for DefaultParseError<T> {
     #[inline]
     fn expected(expected: Cow<'_, str>) -> Self {
         Self::Expected(expected.into_owned())
@@ -150,22 +150,22 @@ pub trait ExpectedNumericParseError {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum DefaultParseError {
+pub enum DefaultParseError<T> {
     ExpectedEndOfInput,
     ExpectedString(String),
-    ExpectedAnyCharacter,
-    ExpectedCharacter(char),
+    ExpectedAnyToken,
+    ExpectedToken(T),
     Expected(String),
     NumericExpectation(NumericExpectation),
 }
 
-impl Display for DefaultParseError {
+impl<T: Display> Display for DefaultParseError<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             Self::ExpectedEndOfInput => write!(f, "expected end of input"),
             Self::ExpectedString(string) => write!(f, r#"expected "{}""#, string),
-            Self::ExpectedAnyCharacter => write!(f, "expected any character"),
-            Self::ExpectedCharacter(character) => write!(f, "expected '{}'", character),
+            Self::ExpectedAnyToken => write!(f, "expected any character"),
+            Self::ExpectedToken(character) => write!(f, "expected '{}'", character),
             Self::Expected(expectation) => write!(f, "expected {}", expectation),
             Self::NumericExpectation(expectation) => write!(f, "expected a {}", expectation),
         }

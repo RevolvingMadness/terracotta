@@ -127,7 +127,7 @@ impl<T> OptionParseResultTExt<T> for OptionParseResult<T> {
 pub trait OptionTExt<T> {
     fn into_soft_parse_result(self) -> SoftParseResult<T>;
 
-    fn into_parse_result_soft(self) -> ParseResult<T>;
+    fn into_parse_result(self) -> ParseResult<T>;
 }
 
 impl<T> OptionTExt<T> for Option<T> {
@@ -139,7 +139,7 @@ impl<T> OptionTExt<T> for Option<T> {
     }
 
     #[inline]
-    fn into_parse_result_soft(self) -> ParseResult<T> {
+    fn into_parse_result(self) -> ParseResult<T> {
         match self {
             Some(value) => Ok(value),
             None => Err(ParseFailure::Soft),

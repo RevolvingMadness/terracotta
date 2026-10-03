@@ -24,7 +24,7 @@ impl ExpectedStringParseError for () {
     fn expected_string(_: &str) -> Self {}
 }
 
-impl ExpectedStringParseError for DefaultParseError {
+impl<T> ExpectedStringParseError for DefaultParseError<T> {
     #[inline]
     fn expected_string(expected: &str) -> Self {
         Self::ExpectedString(expected.to_owned())

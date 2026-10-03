@@ -166,28 +166,49 @@ impl<'input, I: Input + ?Sized, E> Parser<'input, I, E> {
     }
 
     #[inline]
-    pub fn peek(&self) -> ParseResult<I::Token> {
-        self.input.peek(self.position()).into_parse_result_soft()
+    #[must_use]
+    pub fn peek(&self) -> Option<I::Token> {
+        self.input.peek(self.position())
     }
 
     pub fn peek_len(&self, len: usize) -> ParseResult<I::Token> {
         self.input
             .peek_len(self.position(), len)
-            .into_parse_result_soft()
+            .into_parse_result()
     }
 
-    #[inline]
-    pub fn advance(&mut self) -> ParseResult<I::Token> {
+    pub fn advance(&mut self) -> Option<I::Token> {
         let token = self.peek()?;
 
-        self.advance_token(&token);
+        self.position += token.len();
 
-        Ok(token)
+        Some(token)
     }
 
-    #[inline]
-    pub fn advance_token(&mut self, token: &I::Token) {
-        self.position += token.len();
+    pub fn advance_result(&mut self) -> ParseResult<I::Token> {
+        self.advance().into_parse_result()
+    }
+
+    pub fn advance_if(
+        &mut self,
+        predicate: impl FnOnce(&I::Token) -> bool,
+    ) -> Option<Option<I::Token>> {
+        let token = self.peek()?;
+
+        if predicate(&token) {
+            self.position += token.len();
+
+            Some(Some(token))
+        } else {
+            Some(None)
+        }
+    }
+
+    pub fn advance_if_result(
+        &mut self,
+        predicate: impl FnOnce(&I::Token) -> bool,
+    ) -> ParseResult<Option<I::Token>> {
+        self.advance_if(predicate).into_parse_result()
     }
 
     #[must_use]
@@ -195,11 +216,9 @@ impl<'input, I: Input + ?Sized, E> Parser<'input, I, E> {
         let start = self.position();
 
         for _ in 0..len {
-            let Ok(token) = self.peek() else {
+            if self.advance().is_none() {
                 break;
-            };
-
-            self.advance_token(&token);
+            }
         }
 
         self.input.slice(start.span(self.position()))
@@ -209,13 +228,11 @@ impl<'input, I: Input + ?Sized, E> Parser<'input, I, E> {
         let start = self.position();
 
         for _ in 0..len {
-            let Ok(token) = self.peek() else {
+            if self.advance().is_none() {
                 self.restore(start);
 
                 return Err(ParseFailure::Soft);
-            };
-
-            self.advance_token(&token);
+            }
         }
 
         Ok(self.input.slice(start.span(self.position())))
@@ -275,12 +292,12 @@ impl<'input, I: Input + ?Sized, E> Parser<'input, I, E> {
     {
         let start = self.position();
 
-        while let Ok(token) = self.peek() {
+        while let Some(token) = self.peek() {
             if predicate(&token) {
                 break;
             }
 
-            self.advance_token(&token);
+            self.advance();
         }
 
         let end = self.position();
