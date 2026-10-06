@@ -285,7 +285,6 @@ impl<'input, I: Input + ?Sized, E> Parser<'input, I, E> {
         self.errors
     }
 
-    #[inline]
     pub fn take_until<F>(&mut self, mut predicate: F) -> ParseResult<&'input I>
     where
         F: FnMut(&I::Token) -> bool,
@@ -297,7 +296,7 @@ impl<'input, I: Input + ?Sized, E> Parser<'input, I, E> {
                 break;
             }
 
-            self.advance();
+            self.position += token.len();
         }
 
         let end = self.position();
@@ -305,10 +304,11 @@ impl<'input, I: Input + ?Sized, E> Parser<'input, I, E> {
         if end == start {
             Err(ParseFailure::Soft)
         } else {
-            Ok(self.input.slice(Span { start, end }))
+            Ok(self.slice(Span { start, end }))
         }
     }
 
+    #[inline]
     pub fn take_while<F>(&mut self, mut predicate: F) -> ParseResult<&'input I>
     where
         F: FnMut(&I::Token) -> bool,
