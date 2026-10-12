@@ -10,8 +10,8 @@ use crate::{
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Spanned<T: ?Sized> {
-    span: Span,
-    value: T,
+    pub span: Span,
+    pub value: T,
 }
 
 impl<'input, I: Input + ?Sized, E, P: Parsable<'input, I, E>> Parsable<'input, I, E>
@@ -59,10 +59,12 @@ impl<'input, I: Input + ?Sized, E, P: ParsableInstance<'input, I, E>> ParsableIn
     }
 }
 
-pub trait SpannedExt<'input, I: Input + ?Sized, E>: ParsableInstance<'input, I, E> + Sized {
+pub trait SpannedParserExt<'input, I: Input + ?Sized, E>:
+    ParsableInstance<'input, I, E> + Sized
+{
     #[inline]
     #[must_use]
-    fn spanned(self) -> SpannedParsableInstance<'input, I, E, Self> {
+    fn parse_spanned(self) -> SpannedParsableInstance<'input, I, E, Self> {
         SpannedParsableInstance {
             _phantom_data: PhantomData,
             parsable_instance: self,
@@ -70,7 +72,27 @@ pub trait SpannedExt<'input, I: Input + ?Sized, E>: ParsableInstance<'input, I, 
     }
 }
 
-impl<'input, I: Input + ?Sized, E, P: ParsableInstance<'input, I, E>> SpannedExt<'input, I, E>
+impl<'input, I: Input + ?Sized, E, P: ParsableInstance<'input, I, E>> SpannedParserExt<'input, I, E>
     for P
 {
+}
+
+pub trait SpannedExt {
+    #[must_use]
+    fn with_span(self, span: Span) -> Spanned<Self>;
+}
+
+impl<T> SpannedExt for T {
+    #[inline]
+    fn with_span(self, span: Span) -> Spanned<Self> {
+        Spanned::new(span, self)
+    }
+}
+
+impl<T> Spanned<T> {
+    #[inline]
+    #[must_use]
+    pub const fn new(span: Span, value: T) -> Self {
+        Self { span, value }
+    }
 }

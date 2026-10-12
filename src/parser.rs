@@ -6,6 +6,7 @@ use crate::{
     input::{Input, token::Token},
     result::{HardParseFailure, HardParseResult, OptionTExt, ParseFailure, ParseResult},
     span::Span,
+    spanned::{Spanned, SpannedExt},
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -41,7 +42,7 @@ impl ParserPosition {
 pub struct Parser<'input, I: Input + ?Sized, E> {
     input: &'input I,
     position: usize,
-    errors: Vec<(Span, E)>,
+    errors: Vec<Spanned<E>>,
 }
 
 impl<'input, I: Input + ?Sized, E> Parser<'input, I, E> {
@@ -57,7 +58,7 @@ impl<'input, I: Input + ?Sized, E> Parser<'input, I, E> {
     pub fn add_error_with_span<S: Into<Span>>(&mut self, span: S, error: E) -> HardParseFailure {
         let span = span.into();
 
-        self.errors.push((span, error));
+        self.errors.push(error.with_span(span));
 
         HardParseFailure(())
     }
@@ -281,7 +282,7 @@ impl<'input, I: Input + ?Sized, E> Parser<'input, I, E> {
 
     #[inline]
     #[must_use]
-    pub fn finish(self) -> Vec<(Span, E)> {
+    pub fn finish(self) -> Vec<Spanned<E>> {
         self.errors
     }
 
