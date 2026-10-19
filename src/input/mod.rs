@@ -6,7 +6,7 @@ pub mod str;
 pub mod token;
 
 pub trait Input {
-    type Token: Token + Clone;
+    type Token: Token;
 
     #[must_use]
     fn len(&self) -> usize;
