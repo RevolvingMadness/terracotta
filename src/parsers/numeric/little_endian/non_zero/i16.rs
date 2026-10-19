@@ -1,8 +1,8 @@
 use core::num::NonZeroI16;
 
 use crate::{
-    parsable_traits::{Parsable, ParsableError},
-    parse_error::{ExpectedNumericParseError, NumericExpectation},
+    parsable_traits::{Parsable, ParsableDefinition},
+    parse_error::NumericExpectation,
     parser::Parser,
     parsers::numeric::little_endian::i16::LittleEndianI16Parser,
     result::ParseResult,
@@ -10,10 +10,8 @@ use crate::{
 
 pub struct LittleEndianNonZeroI16Parser;
 
-impl<E: ExpectedNumericParseError> Parsable<'_, [u8], E> for LittleEndianNonZeroI16Parser {
-    type Output = NonZeroI16;
-
-    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
+impl Parsable<'_, [u8]> for LittleEndianNonZeroI16Parser {
+    fn parse(&self, parser: &mut Parser<[u8], Self::Error>) -> ParseResult<Self::Output> {
         let start = parser.position();
 
         let value = LittleEndianI16Parser.parse(parser)?;
@@ -23,7 +21,7 @@ impl<E: ExpectedNumericParseError> Parsable<'_, [u8], E> for LittleEndianNonZero
 
             return parser.add_error_with_span_result(
                 start.span(end),
-                E::expected_numeric(NumericExpectation::LittleEndianNonZeroI16),
+                NumericExpectation::LittleEndianNonZeroI16,
             );
         };
 
@@ -31,26 +29,34 @@ impl<E: ExpectedNumericParseError> Parsable<'_, [u8], E> for LittleEndianNonZero
     }
 }
 
-impl<E: ExpectedNumericParseError> ParsableError<E> for LittleEndianNonZeroI16Parser {
+impl ParsableDefinition<'_> for LittleEndianNonZeroI16Parser {
+    type Output = NonZeroI16;
+
+    type Error = NumericExpectation;
+
     #[inline]
-    fn error(&self) -> E {
-        E::expected_numeric(NumericExpectation::LittleEndianNonZeroI16)
+    fn error(&self) -> Self::Error {
+        NumericExpectation::LittleEndianNonZeroI16
     }
 }
 
-impl<E> Parsable<'_, [u8], E> for Option<LittleEndianNonZeroI16Parser> {
-    type Output = Option<NonZeroI16>;
+pub struct OptionalLittleEndianNonZeroI16Parser;
 
-    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
+impl Parsable<'_, [u8]> for OptionalLittleEndianNonZeroI16Parser {
+    fn parse(&self, parser: &mut Parser<[u8], Self::Error>) -> ParseResult<Self::Output> {
         let value = LittleEndianI16Parser.parse(parser)?;
 
         Ok(NonZeroI16::new(value))
     }
 }
 
-impl<E: ExpectedNumericParseError> ParsableError<E> for Option<LittleEndianNonZeroI16Parser> {
+impl ParsableDefinition<'_> for OptionalLittleEndianNonZeroI16Parser {
+    type Output = Option<NonZeroI16>;
+
+    type Error = NumericExpectation;
+
     #[inline]
-    fn error(&self) -> E {
-        E::expected_numeric(NumericExpectation::LittleEndianI16)
+    fn error(&self) -> Self::Error {
+        NumericExpectation::LittleEndianI16
     }
 }

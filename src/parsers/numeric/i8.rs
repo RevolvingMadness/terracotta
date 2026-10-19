@@ -1,25 +1,27 @@
 use crate::{
-    parsable_traits::{Parsable, ParsableError},
-    parse_error::{ExpectedNumericParseError, NumericExpectation},
+    parsable_traits::{Parsable, ParsableDefinition},
+    parse_error::NumericExpectation,
     parser::Parser,
     result::ParseResult,
 };
 
 pub struct I8Parser;
 
-impl<E> Parsable<'_, [u8], E> for I8Parser {
+impl ParsableDefinition<'_> for I8Parser {
     type Output = i8;
 
-    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
-        let value = parser.advance_result()?;
+    type Error = NumericExpectation;
 
-        Ok(value as i8)
+    #[inline]
+    fn error(&self) -> Self::Error {
+        NumericExpectation::I8
     }
 }
 
-impl<E: ExpectedNumericParseError> ParsableError<E> for I8Parser {
-    #[inline]
-    fn error(&self) -> E {
-        E::expected_numeric(NumericExpectation::I8)
+impl Parsable<'_, [u8]> for I8Parser {
+    fn parse(&self, parser: &mut Parser<[u8], Self::Error>) -> ParseResult<Self::Output> {
+        let value = parser.advance_result()?;
+
+        Ok(value as i8)
     }
 }

@@ -1,40 +1,29 @@
-use alloc::{borrow::ToOwned, format, string::String};
+use alloc::{borrow::ToOwned, string::String};
 
 use crate::{
-    parsable_traits::{Parsable, ParsableError},
-    parse_error::DefaultParseError,
+    parsable_traits::{Parsable, ParsableDefinition},
     parser::Parser,
     result::{ParseFailure, ParseResult},
 };
 
-pub trait ExpectedStringParseError {
-    #[must_use]
-    fn expected_string(expected: &str) -> Self;
-}
+#[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
+pub struct ExpectedStringParseError(String);
 
-impl ExpectedStringParseError for String {
-    #[inline]
-    fn expected_string(expected: &str) -> Self {
-        format!("expected `{}`", expected)
-    }
-}
-
-impl ExpectedStringParseError for () {
-    #[inline]
-    fn expected_string(_: &str) -> Self {}
-}
-
-impl<T> ExpectedStringParseError for DefaultParseError<T> {
-    #[inline]
-    fn expected_string(expected: &str) -> Self {
-        Self::ExpectedString(expected.to_owned())
-    }
-}
-
-impl<'input, E> Parsable<'input, Self, E> for str {
+impl<'input> ParsableDefinition<'input> for str
+where
+    Self: 'input,
+{
     type Output = &'input Self;
 
-    fn parse(&self, parser: &mut Parser<'input, Self, E>) -> ParseResult<Self::Output> {
+    type Error = ExpectedStringParseError;
+
+    fn error(&self) -> Self::Error {
+        ExpectedStringParseError(self.to_owned())
+    }
+}
+
+impl<'input> Parsable<'input, Self> for str {
+    fn parse(&self, parser: &mut Parser<'input, Self, Self::Error>) -> ParseResult<Self::Output> {
         if !parser.slice_starts_with(parser.position(), self) {
             return Err(ParseFailure::Soft);
         }
@@ -42,12 +31,5 @@ impl<'input, E> Parsable<'input, Self, E> for str {
         let string = parser.advance_len(self.len());
 
         Ok(string)
-    }
-}
-
-impl<E: ExpectedStringParseError> ParsableError<E> for str {
-    #[inline]
-    fn error(&self) -> E {
-        E::expected_string(self)
     }
 }

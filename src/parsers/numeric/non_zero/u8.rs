@@ -1,8 +1,8 @@
 use core::num::NonZeroU8;
 
 use crate::{
-    parsable_traits::{Parsable, ParsableError},
-    parse_error::{ExpectedNumericParseError, NumericExpectation},
+    parsable_traits::{Parsable, ParsableDefinition},
+    parse_error::NumericExpectation,
     parser::Parser,
     parsers::numeric::u8::U8Parser,
     result::ParseResult,
@@ -10,10 +10,8 @@ use crate::{
 
 pub struct NonZeroU8Parser;
 
-impl<E: ExpectedNumericParseError> Parsable<'_, [u8], E> for NonZeroU8Parser {
-    type Output = NonZeroU8;
-
-    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
+impl Parsable<'_, [u8]> for NonZeroU8Parser {
+    fn parse(&self, parser: &mut Parser<[u8], Self::Error>) -> ParseResult<Self::Output> {
         let start = parser.position();
 
         let value = U8Parser.parse(parser)?;
@@ -21,35 +19,39 @@ impl<E: ExpectedNumericParseError> Parsable<'_, [u8], E> for NonZeroU8Parser {
         let Some(value) = NonZeroU8::new(value) else {
             let end = parser.position();
 
-            return parser.add_error_with_span_result(
-                start.span(end),
-                E::expected_numeric(NumericExpectation::NonZeroU8),
-            );
+            return parser
+                .add_error_with_span_result(start.span(end), NumericExpectation::NonZeroU8);
         };
 
         Ok(value)
     }
 }
 
-impl<E: ExpectedNumericParseError> ParsableError<E> for NonZeroU8Parser {
+impl ParsableDefinition<'_> for NonZeroU8Parser {
+    type Output = NonZeroU8;
+
+    type Error = NumericExpectation;
+
     #[inline]
-    fn error(&self) -> E {
-        E::expected_numeric(NumericExpectation::NonZeroU8)
+    fn error(&self) -> Self::Error {
+        NumericExpectation::NonZeroU8
     }
 }
 
-impl<E> Parsable<'_, [u8], E> for Option<NonZeroU8> {
-    type Output = Self;
-
-    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
+impl Parsable<'_, [u8]> for Option<NonZeroU8> {
+    fn parse(&self, parser: &mut Parser<[u8], Self::Error>) -> ParseResult<Self::Output> {
         let value = U8Parser.parse(parser)?;
 
         Ok(NonZeroU8::new(value))
     }
 }
 
-impl<E: ExpectedNumericParseError> ParsableError<E> for Option<NonZeroU8> {
-    fn error(&self) -> E {
-        E::expected_numeric(NumericExpectation::U8)
+impl ParsableDefinition<'_> for Option<NonZeroU8> {
+    type Output = Option<NonZeroU8>;
+
+    type Error = NumericExpectation;
+
+    fn error(&self) -> Self::Error {
+        NumericExpectation::U8
     }
 }

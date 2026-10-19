@@ -1,16 +1,14 @@
 use crate::{
-    parsable_traits::{Parsable, ParsableError},
-    parse_error::{ExpectedNumericParseError, NumericExpectation},
+    parsable_traits::{Parsable, ParsableDefinition},
+    parse_error::NumericExpectation,
     parser::Parser,
     result::ParseResult,
 };
 
 pub struct LittleEndianI64Parser;
 
-impl<E> Parsable<'_, [u8], E> for LittleEndianI64Parser {
-    type Output = i64;
-
-    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
+impl Parsable<'_, [u8]> for LittleEndianI64Parser {
+    fn parse(&self, parser: &mut Parser<[u8], Self::Error>) -> ParseResult<Self::Output> {
         let bytes = parser.advance_len_exact(8)?;
 
         let bytes = <[u8; 8] as TryFrom<&[u8]>>::try_from(bytes).unwrap();
@@ -19,9 +17,13 @@ impl<E> Parsable<'_, [u8], E> for LittleEndianI64Parser {
     }
 }
 
-impl<E: ExpectedNumericParseError> ParsableError<E> for LittleEndianI64Parser {
+impl ParsableDefinition<'_> for LittleEndianI64Parser {
+    type Output = i64;
+
+    type Error = NumericExpectation;
+
     #[inline]
-    fn error(&self) -> E {
-        E::expected_numeric(NumericExpectation::LittleEndianI64)
+    fn error(&self) -> Self::Error {
+        NumericExpectation::LittleEndianI64
     }
 }

@@ -1,27 +1,28 @@
 use crate::{
-    parsable_traits::{Parsable, ParsableError},
-    parse_error::{ExpectedNumericParseError, NumericExpectation},
+    parsable_traits::{Parsable, ParsableDefinition},
+    parse_error::NumericExpectation,
     parser::Parser,
     result::ParseResult,
 };
 
 pub struct LittleEndianU16Parser;
 
-impl<E> Parsable<'_, [u8], E> for LittleEndianU16Parser {
+impl ParsableDefinition<'_> for LittleEndianU16Parser {
     type Output = u16;
 
-    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
+    type Error = NumericExpectation;
+
+    fn error(&self) -> Self::Error {
+        NumericExpectation::LittleEndianU16
+    }
+}
+
+impl Parsable<'_, [u8]> for LittleEndianU16Parser {
+    fn parse(&self, parser: &mut Parser<[u8], Self::Error>) -> ParseResult<Self::Output> {
         let bytes = parser.advance_len_exact(2)?;
 
         let bytes = <[u8; 2] as TryFrom<&[u8]>>::try_from(bytes).unwrap();
 
         Ok(u16::from_le_bytes(bytes))
-    }
-}
-
-impl<E: ExpectedNumericParseError> ParsableError<E> for LittleEndianU16Parser {
-    #[inline]
-    fn error(&self) -> E {
-        E::expected_numeric(NumericExpectation::LittleEndianU16)
     }
 }

@@ -1,58 +1,11 @@
 use core::fmt::{self, Display, Formatter};
 
-use alloc::{
-    borrow::{Cow, ToOwned},
-    format,
-    string::String,
-};
+use alloc::{borrow::Cow, string::String};
 
-pub trait ExpectedEndOfInputParseError {
-    #[must_use]
-    fn expected_end_of_input() -> Self;
-}
+pub struct ExpectedEndOfInputParseError;
 
-impl ExpectedEndOfInputParseError for String {
-    #[inline]
-    fn expected_end_of_input() -> Self {
-        "expected end of input".to_owned()
-    }
-}
-
-impl ExpectedEndOfInputParseError for () {
-    #[inline]
-    fn expected_end_of_input() -> Self {}
-}
-
-impl<T> ExpectedEndOfInputParseError for DefaultParseError<T> {
-    #[inline]
-    fn expected_end_of_input() -> Self {
-        Self::ExpectedEndOfInput
-    }
-}
-
-pub trait ExpectedParseError {
-    #[must_use]
-    fn expected(expected: Cow<'_, str>) -> Self;
-}
-
-impl ExpectedParseError for String {
-    #[inline]
-    fn expected(expected: Cow<'_, str>) -> Self {
-        format!("expected {}", expected)
-    }
-}
-
-impl ExpectedParseError for () {
-    #[inline]
-    fn expected(_: Cow<'_, str>) -> Self {}
-}
-
-impl<T> ExpectedParseError for DefaultParseError<T> {
-    #[inline]
-    fn expected(expected: Cow<'_, str>) -> Self {
-        Self::Expected(expected.into_owned())
-    }
-}
+#[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
+pub struct ExpectedParseError<'a>(Cow<'a, str>);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum NumericExpectation {
@@ -142,11 +95,6 @@ impl Display for NumericExpectation {
 
         f.write_str(string)
     }
-}
-
-pub trait ExpectedNumericParseError {
-    #[must_use]
-    fn expected_numeric(expectation: NumericExpectation) -> Self;
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

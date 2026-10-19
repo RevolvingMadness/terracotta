@@ -39,13 +39,13 @@ impl ParserPosition {
 }
 
 #[derive(Debug)]
-pub struct Parser<'input, I: Input + ?Sized, E> {
+pub struct Parser<'input, I: Input + ?Sized + 'input, E> {
     input: &'input I,
     position: usize,
     errors: Vec<Spanned<E>>,
 }
 
-impl<'input, I: Input + ?Sized, E> Parser<'input, I, E> {
+impl<'input, I: Input + ?Sized + 'input, E> Parser<'input, I, E> {
     #[must_use]
     pub const fn new(input: &'input I) -> Self {
         Self {

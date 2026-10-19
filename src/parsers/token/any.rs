@@ -1,14 +1,31 @@
-use core::{fmt::Debug, hash::Hash};
+use core::{fmt::Debug, hash::Hash, marker::PhantomData};
 
-use crate::{input::Input, parsable_traits::Parsable, parser::Parser, result::ParseResult};
+use crate::{
+    input::Input,
+    parsable_traits::{Parsable, ParsableDefinition},
+    parser::Parser,
+    result::ParseResult,
+};
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct AnyToken;
+pub struct AnyToken<T> {
+    _phantom_data: PhantomData<T>,
+}
 
-impl<I: Input + ?Sized, E> Parsable<'_, I, E> for AnyToken {
-    type Output = I::Token;
+pub struct ExpectedAnyTokenParseError;
 
-    fn parse(&self, parser: &mut Parser<I, E>) -> ParseResult<Self::Output> {
+impl<'input, T> ParsableDefinition<'input> for AnyToken<T> {
+    type Output = T;
+
+    type Error = ExpectedAnyTokenParseError;
+
+    fn error(&self) -> Self::Error {
+        todo!()
+    }
+}
+
+impl<'input, I: Input + ?Sized + 'input> Parsable<'input, I> for AnyToken<I::Token> {
+    fn parse(&self, parser: &mut Parser<I, Self::Error>) -> ParseResult<Self::Output> {
         parser.advance_result()
     }
 }
