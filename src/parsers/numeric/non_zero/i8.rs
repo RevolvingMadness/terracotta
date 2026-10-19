@@ -4,16 +4,17 @@ use crate::{
     parsable_traits::{Parsable, ParsableError},
     parse_error::{ExpectedNumericParseError, NumericExpectation},
     parser::Parser,
+    parsers::numeric::i8::I8Parser,
     result::ParseResult,
 };
 
 impl<E: ExpectedNumericParseError> Parsable<'_, [u8], E> for NonZeroI8 {
     type Output = Self;
 
-    fn parse(parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
+    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
         let start = parser.position();
 
-        let value = i8::parse(parser)?;
+        let value = I8Parser.parse(parser)?;
 
         let Some(value) = Self::new(value) else {
             let end = parser.position();
@@ -29,7 +30,7 @@ impl<E: ExpectedNumericParseError> Parsable<'_, [u8], E> for NonZeroI8 {
 }
 
 impl<E: ExpectedNumericParseError> ParsableError<E> for NonZeroI8 {
-    fn error() -> E {
+    fn error(&self) -> E {
         E::expected_numeric(NumericExpectation::NonZeroI8)
     }
 }
@@ -37,8 +38,8 @@ impl<E: ExpectedNumericParseError> ParsableError<E> for NonZeroI8 {
 impl<E> Parsable<'_, [u8], E> for Option<NonZeroI8> {
     type Output = Self;
 
-    fn parse(parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
-        let value = i8::parse(parser)?;
+    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
+        let value = I8Parser.parse(parser)?;
 
         Ok(NonZeroI8::new(value))
     }
@@ -46,7 +47,7 @@ impl<E> Parsable<'_, [u8], E> for Option<NonZeroI8> {
 
 impl<E: ExpectedNumericParseError> ParsableError<E> for Option<NonZeroI8> {
     #[inline]
-    fn error() -> E {
+    fn error(&self) -> E {
         E::expected_numeric(NumericExpectation::I8)
     }
 }

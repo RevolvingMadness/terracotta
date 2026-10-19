@@ -1,7 +1,7 @@
 use alloc::{borrow::ToOwned, format, string::String};
 
 use crate::{
-    parsable_traits::{ParsableInstance, ParsableInstanceError},
+    parsable_traits::{Parsable, ParsableError},
     parse_error::DefaultParseError,
     parser::Parser,
     result::{ParseFailure, ParseResult},
@@ -31,10 +31,10 @@ impl<T> ExpectedStringParseError for DefaultParseError<T> {
     }
 }
 
-impl<'input, E> ParsableInstance<'input, Self, E> for str {
+impl<'input, E> Parsable<'input, Self, E> for str {
     type Output = &'input Self;
 
-    fn instance_parse(&self, parser: &mut Parser<'input, Self, E>) -> ParseResult<Self::Output> {
+    fn parse(&self, parser: &mut Parser<'input, Self, E>) -> ParseResult<Self::Output> {
         if !parser.slice_starts_with(parser.position(), self) {
             return Err(ParseFailure::Soft);
         }
@@ -45,7 +45,7 @@ impl<'input, E> ParsableInstance<'input, Self, E> for str {
     }
 }
 
-impl<E: ExpectedStringParseError> ParsableInstanceError<E> for str {
+impl<E: ExpectedStringParseError> ParsableError<E> for str {
     #[inline]
     fn error(&self) -> E {
         E::expected_string(self)

@@ -2,16 +2,15 @@ use crate::{
     parsable_traits::{Parsable, ParsableError},
     parse_error::{ExpectedNumericParseError, NumericExpectation},
     parser::Parser,
-    parsers::numeric::little_endian::LittleEndian,
     result::ParseResult,
 };
 
-pub type LittleEndianI32 = LittleEndian<i32>;
+pub struct LittleEndianI32Parser;
 
-impl<E> Parsable<'_, [u8], E> for LittleEndianI32 {
+impl<E> Parsable<'_, [u8], E> for LittleEndianI32Parser {
     type Output = i32;
 
-    fn parse(parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
+    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
         let bytes = parser.advance_len_exact(4)?;
 
         let bytes = <[u8; 4] as TryFrom<&[u8]>>::try_from(bytes).unwrap();
@@ -20,9 +19,9 @@ impl<E> Parsable<'_, [u8], E> for LittleEndianI32 {
     }
 }
 
-impl<E: ExpectedNumericParseError> ParsableError<E> for LittleEndianI32 {
+impl<E: ExpectedNumericParseError> ParsableError<E> for LittleEndianI32Parser {
     #[inline]
-    fn error() -> E {
+    fn error(&self) -> E {
         E::expected_numeric(NumericExpectation::LittleEndianI32)
     }
 }

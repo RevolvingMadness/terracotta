@@ -4,18 +4,21 @@ use crate::{
     parsable_traits::{Parsable, ParsableError},
     parse_error::{ExpectedNumericParseError, NumericExpectation},
     parser::Parser,
+    parsers::numeric::u8::U8Parser,
     result::ParseResult,
 };
 
-impl<E: ExpectedNumericParseError> Parsable<'_, [u8], E> for NonZeroU8 {
-    type Output = Self;
+pub struct NonZeroU8Parser;
 
-    fn parse(parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
+impl<E: ExpectedNumericParseError> Parsable<'_, [u8], E> for NonZeroU8Parser {
+    type Output = NonZeroU8;
+
+    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
         let start = parser.position();
 
-        let value = u8::parse(parser)?;
+        let value = U8Parser.parse(parser)?;
 
-        let Some(value) = Self::new(value) else {
+        let Some(value) = NonZeroU8::new(value) else {
             let end = parser.position();
 
             return parser.add_error_with_span_result(
@@ -28,9 +31,9 @@ impl<E: ExpectedNumericParseError> Parsable<'_, [u8], E> for NonZeroU8 {
     }
 }
 
-impl<E: ExpectedNumericParseError> ParsableError<E> for NonZeroU8 {
+impl<E: ExpectedNumericParseError> ParsableError<E> for NonZeroU8Parser {
     #[inline]
-    fn error() -> E {
+    fn error(&self) -> E {
         E::expected_numeric(NumericExpectation::NonZeroU8)
     }
 }
@@ -38,15 +41,15 @@ impl<E: ExpectedNumericParseError> ParsableError<E> for NonZeroU8 {
 impl<E> Parsable<'_, [u8], E> for Option<NonZeroU8> {
     type Output = Self;
 
-    fn parse(parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
-        let value = u8::parse(parser)?;
+    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
+        let value = U8Parser.parse(parser)?;
 
         Ok(NonZeroU8::new(value))
     }
 }
 
 impl<E: ExpectedNumericParseError> ParsableError<E> for Option<NonZeroU8> {
-    fn error() -> E {
+    fn error(&self) -> E {
         E::expected_numeric(NumericExpectation::U8)
     }
 }

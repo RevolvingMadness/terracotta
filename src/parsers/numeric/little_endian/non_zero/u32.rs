@@ -4,19 +4,19 @@ use crate::{
     parsable_traits::{Parsable, ParsableError},
     parse_error::{ExpectedNumericParseError, NumericExpectation},
     parser::Parser,
-    parsers::numeric::little_endian::{non_zero::LittleEndianNonZero, u32::LittleEndianU32},
+    parsers::numeric::little_endian::u32::LittleEndianU32Parser,
     result::ParseResult,
 };
 
-pub type LittleEndianNonZeroU32 = LittleEndianNonZero<u32>;
+pub struct LittleEndianNonZeroU32Parser;
 
-impl<E: ExpectedNumericParseError> Parsable<'_, [u8], E> for LittleEndianNonZeroU32 {
+impl<E: ExpectedNumericParseError> Parsable<'_, [u8], E> for LittleEndianNonZeroU32Parser {
     type Output = NonZeroU32;
 
-    fn parse(parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
+    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
         let start = parser.position();
 
-        let value = LittleEndianU32::parse(parser)?;
+        let value = LittleEndianU32Parser.parse(parser)?;
 
         let Some(value) = NonZeroU32::new(value) else {
             let end = parser.position();
@@ -31,26 +31,26 @@ impl<E: ExpectedNumericParseError> Parsable<'_, [u8], E> for LittleEndianNonZero
     }
 }
 
-impl<E: ExpectedNumericParseError> ParsableError<E> for LittleEndianNonZeroU32 {
+impl<E: ExpectedNumericParseError> ParsableError<E> for LittleEndianNonZeroU32Parser {
     #[inline]
-    fn error() -> E {
+    fn error(&self) -> E {
         E::expected_numeric(NumericExpectation::LittleEndianNonZeroU32)
     }
 }
 
-impl<E> Parsable<'_, [u8], E> for Option<LittleEndianNonZeroU32> {
+impl<E> Parsable<'_, [u8], E> for Option<LittleEndianNonZeroU32Parser> {
     type Output = Option<NonZeroU32>;
 
-    fn parse(parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
-        let value = LittleEndianU32::parse(parser)?;
+    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
+        let value = LittleEndianU32Parser.parse(parser)?;
 
         Ok(NonZeroU32::new(value))
     }
 }
 
-impl<E: ExpectedNumericParseError> ParsableError<E> for Option<LittleEndianNonZeroU32> {
+impl<E: ExpectedNumericParseError> ParsableError<E> for Option<LittleEndianNonZeroU32Parser> {
     #[inline]
-    fn error() -> E {
+    fn error(&self) -> E {
         E::expected_numeric(NumericExpectation::LittleEndianU32)
     }
 }

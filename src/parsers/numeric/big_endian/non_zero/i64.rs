@@ -4,19 +4,19 @@ use crate::{
     parsable_traits::{Parsable, ParsableError},
     parse_error::{ExpectedNumericParseError, NumericExpectation},
     parser::Parser,
-    parsers::numeric::big_endian::{i64::BigEndianI64, non_zero::BigEndianNonZero},
+    parsers::numeric::big_endian::i64::BigEndianI64Parser,
     result::ParseResult,
 };
 
-pub type BigEndianNonZeroI64 = BigEndianNonZero<i64>;
+pub struct BigEndianNonZeroI64Parser;
 
-impl<E: ExpectedNumericParseError> Parsable<'_, [u8], E> for BigEndianNonZeroI64 {
+impl<E: ExpectedNumericParseError> Parsable<'_, [u8], E> for BigEndianNonZeroI64Parser {
     type Output = NonZeroI64;
 
-    fn parse(parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
+    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
         let start = parser.position();
 
-        let value = BigEndianI64::parse(parser)?;
+        let value = BigEndianI64Parser.parse(parser)?;
 
         let Some(value) = NonZeroI64::new(value) else {
             let end = parser.position();
@@ -31,26 +31,26 @@ impl<E: ExpectedNumericParseError> Parsable<'_, [u8], E> for BigEndianNonZeroI64
     }
 }
 
-impl<E: ExpectedNumericParseError> ParsableError<E> for BigEndianNonZeroI64 {
+impl<E: ExpectedNumericParseError> ParsableError<E> for BigEndianNonZeroI64Parser {
     #[inline]
-    fn error() -> E {
+    fn error(&self) -> E {
         E::expected_numeric(NumericExpectation::BigEndianNonZeroI64)
     }
 }
 
-impl<E> Parsable<'_, [u8], E> for Option<BigEndianNonZeroI64> {
+impl<E> Parsable<'_, [u8], E> for Option<BigEndianNonZeroI64Parser> {
     type Output = Option<NonZeroI64>;
 
-    fn parse(parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
-        let value = BigEndianI64::parse(parser)?;
+    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
+        let value = BigEndianI64Parser.parse(parser)?;
 
         Ok(NonZeroI64::new(value))
     }
 }
 
-impl<E: ExpectedNumericParseError> ParsableError<E> for Option<BigEndianNonZeroI64> {
+impl<E: ExpectedNumericParseError> ParsableError<E> for Option<BigEndianNonZeroI64Parser> {
     #[inline]
-    fn error() -> E {
+    fn error(&self) -> E {
         E::expected_numeric(NumericExpectation::BigEndianI64)
     }
 }

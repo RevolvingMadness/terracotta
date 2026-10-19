@@ -5,19 +5,21 @@ use crate::{
     result::ParseResult,
 };
 
-impl<E> Parsable<'_, [u8], E> for i8 {
-    type Output = Self;
+pub struct I8Parser;
 
-    fn parse(parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
+impl<E> Parsable<'_, [u8], E> for I8Parser {
+    type Output = i8;
+
+    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
         let value = parser.advance_result()?;
 
-        Ok(value as Self)
+        Ok(value as i8)
     }
 }
 
-impl<E: ExpectedNumericParseError> ParsableError<E> for i8 {
+impl<E: ExpectedNumericParseError> ParsableError<E> for I8Parser {
     #[inline]
-    fn error() -> E {
+    fn error(&self) -> E {
         E::expected_numeric(NumericExpectation::I8)
     }
 }
