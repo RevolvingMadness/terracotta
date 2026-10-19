@@ -26,7 +26,7 @@ impl Parsable<'_, [u8]> for NonZeroI8Parser {
 
         let value = I8Parser.parse(parser)?;
 
-        let Some(value) = Self::new(value) else {
+        let Some(value) = NonZeroI8::new(value) else {
             let end = parser.position();
 
             return parser
