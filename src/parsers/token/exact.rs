@@ -1,17 +1,18 @@
 use core::{fmt::Debug, hash::Hash};
 
 use crate::{
+    failures::ParseFailure,
     input::Input,
-    parsable_traits::{Parsable, ParsableDefinition},
     parser::Parser,
-    result::{ParseFailure, ParseResult},
+    results::ParseResult,
+    traits::{parsable::Parsable, parsable_definition::ParsableDefinition},
 };
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ExactTokenParser<T>(pub T);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct ExpectedExactTokenParseError<T>(T);
+pub struct ExpectedExactTokenParseError<T>(pub T);
 
 impl<T: Clone> ParsableDefinition<'_> for ExactTokenParser<T> {
     type Output = T;

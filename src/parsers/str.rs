@@ -1,18 +1,16 @@
 use alloc::{borrow::ToOwned, string::String};
 
 use crate::{
-    parsable_traits::{Parsable, ParsableDefinition},
+    failures::ParseFailure,
     parser::Parser,
-    result::{ParseFailure, ParseResult},
+    results::ParseResult,
+    traits::{parsable::Parsable, parsable_definition::ParsableDefinition},
 };
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
-pub struct ExpectedStringParseError(String);
+pub struct ExpectedStringParseError(pub String);
 
-impl<'input> ParsableDefinition<'input> for str
-where
-    Self: 'input,
-{
+impl<'input> ParsableDefinition<'input> for str {
     type Output = &'input Self;
 
     type Error = ExpectedStringParseError;

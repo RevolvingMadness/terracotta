@@ -2,9 +2,9 @@ use core::{fmt::Debug, hash::Hash, marker::PhantomData};
 
 use crate::{
     input::Input,
-    parsable_traits::{Parsable, ParsableDefinition},
     parser::Parser,
-    result::ParseResult,
+    results::ParseResult,
+    traits::{parsable::Parsable, parsable_definition::ParsableDefinition},
 };
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]

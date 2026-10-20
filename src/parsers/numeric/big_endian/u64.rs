@@ -1,8 +1,8 @@
 use crate::{
-    parsable_traits::{Parsable, ParsableDefinition},
     parse_error::{ExpectedNumberParseError, NumericExpectation},
     parser::Parser,
-    result::ParseResult,
+    results::ParseResult,
+    traits::{parsable::Parsable, parsable_definition::ParsableDefinition},
 };
 
 pub struct BigEndianU64Parser;

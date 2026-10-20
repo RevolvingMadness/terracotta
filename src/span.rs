@@ -3,7 +3,7 @@ use core::{
     ops::{Bound, Range, RangeBounds},
 };
 
-use crate::parser::ParserPosition;
+use crate::parser::position::ParserPosition;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Span {

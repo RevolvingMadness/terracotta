@@ -1,11 +1,11 @@
 use core::num::NonZeroU16;
 
 use crate::{
-    parsable_traits::{Parsable, ParsableDefinition},
     parse_error::{ExpectedNumberParseError, NumericExpectation},
     parser::Parser,
     parsers::numeric::big_endian::u16::BigEndianU16Parser,
-    result::ParseResult,
+    results::ParseResult,
+    traits::{parsable::Parsable, parsable_definition::ParsableDefinition},
 };
 
 pub struct BigEndianNonZeroU16Parser;

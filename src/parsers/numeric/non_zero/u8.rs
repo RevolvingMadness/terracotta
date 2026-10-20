@@ -1,11 +1,11 @@
 use core::num::NonZeroU8;
 
 use crate::{
-    parsable_traits::{Parsable, ParsableDefinition},
     parse_error::{ExpectedNumberParseError, NumericExpectation},
     parser::Parser,
     parsers::numeric::u8::U8Parser,
-    result::ParseResult,
+    results::ParseResult,
+    traits::{parsable::Parsable, parsable_definition::ParsableDefinition},
 };
 
 pub struct NonZeroU8Parser;

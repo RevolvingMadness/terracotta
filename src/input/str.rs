@@ -1,4 +1,4 @@
-use crate::{input::Input, parser::ParserPosition, span::Span};
+use crate::{input::Input, parser::position::ParserPosition, span::Span};
 
 impl Input for str {
     type Token = char;

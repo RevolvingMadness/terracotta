@@ -2,10 +2,13 @@ use alloc::vec::Vec;
 
 use crate::{
     input::Input,
-    parsable_traits::{Parsable, ParsableDefinition, ParsableWithContext},
     parse_error::ExpectedEndOfInputParseError,
     parser::Parser,
     spanned::Spanned,
+    traits::{
+        parsable::Parsable, parsable_definition::ParsableDefinition,
+        parsable_with_context::ParsableWithContext,
+    },
 };
 
 fn parse_fully<'input, I, ParserError, Output, ParsableError>(

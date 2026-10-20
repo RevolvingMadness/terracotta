@@ -2,10 +2,10 @@ use core::marker::PhantomData;
 
 use crate::{
     input::Input,
-    parsable_traits::{Parsable, ParsableDefinition},
     parser::Parser,
-    result::ParseResult,
+    results::ParseResult,
     span::Span,
+    traits::{parsable::Parsable, parsable_definition::ParsableDefinition},
 };
 
 pub struct SpannedParser<'input, I: Input + ?Sized + 'input, E, P: Parsable<'input, I, E>> {

@@ -1,6 +1,6 @@
 use crate::{
     input::{Input, token::Token},
-    parser::ParserPosition,
+    parser::position::ParserPosition,
     span::Span,
 };
 

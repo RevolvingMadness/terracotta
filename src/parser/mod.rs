@@ -1,42 +1,15 @@
-use core::fmt::{self, Display, Formatter};
-
 use alloc::vec::Vec;
 
 use crate::{
+    failures::{ParseFailure, hard::HardParseFailure},
     input::{Input, token::Token},
-    result::{HardParseFailure, HardParseResult, OptionTExt, ParseFailure, ParseResult},
+    parser::position::ParserPosition,
+    results::{ParseResult, hard::HardParseResult, option::OptionTExt},
     span::Span,
     spanned::{Spanned, SpannedExt},
 };
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct ParserPosition(pub(crate) usize);
-
-impl Display for ParserPosition {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        self.0.fmt(f)
-    }
-}
-
-impl ParserPosition {
-    #[inline]
-    #[must_use]
-    pub const fn into_inner(self) -> usize {
-        self.0
-    }
-
-    #[inline]
-    #[must_use]
-    pub const fn abs_diff(self, other: Self) -> usize {
-        other.0.abs_diff(self.0)
-    }
-
-    #[inline]
-    #[must_use]
-    pub const fn span(self, other: Self) -> Span {
-        Span::new(self, other)
-    }
-}
+pub mod position;
 
 #[derive(Debug)]
 pub struct Parser<'input, I, E>
@@ -81,7 +54,7 @@ where
         span: S,
         error: E2,
     ) -> ParseResult<T> {
-        Err(ParseFailure::Hard(self.add_error_with_span(span, error)))
+        self.add_error_with_span(span, error).into_parse_result()
     }
 
     #[inline]
@@ -90,7 +63,8 @@ where
         span: S,
         error: E2,
     ) -> HardParseResult<T> {
-        Err(self.add_error_with_span(span, error))
+        self.add_error_with_span(span, error)
+            .into_hard_parse_result()
     }
 
     #[inline]

@@ -1,8 +1,8 @@
 use crate::{
     input::Input,
-    parsable_traits::{Parsable, ParsableDefinition},
     parser::Parser,
-    result::ParseResult,
+    results::ParseResult,
+    traits::{parsable::Parsable, parsable_definition::ParsableDefinition},
 };
 
 impl<'input, P: ParsableDefinition<'input> + ?Sized> ParsableDefinition<'input> for &P {

@@ -1,4 +1,4 @@
-use crate::{input::token::Token, parser::ParserPosition, span::Span};
+use crate::{input::token::Token, parser::position::ParserPosition, span::Span};
 
 pub mod ext;
 pub mod slice;
