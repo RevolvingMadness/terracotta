@@ -22,8 +22,8 @@ where
     }
 }
 
-impl<'input> Parsable<'input, Self> for str {
-    fn parse(&self, parser: &mut Parser<'input, Self, Self::Error>) -> ParseResult<Self::Output> {
+impl<'input, E: From<Self::Error>> Parsable<'input, Self, E> for str {
+    fn parse(&self, parser: &mut Parser<'input, Self, E>) -> ParseResult<Self::Output> {
         if !parser.slice_starts_with(parser.position(), self) {
             return Err(ParseFailure::Soft);
         }

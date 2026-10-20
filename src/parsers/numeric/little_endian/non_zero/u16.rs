@@ -2,7 +2,7 @@ use core::num::NonZeroU16;
 
 use crate::{
     parsable_traits::{Parsable, ParsableDefinition},
-    parse_error::NumericExpectation,
+    parse_error::{ExpectedNumberParseError, NumericExpectation},
     parser::Parser,
     parsers::numeric::little_endian::u16::LittleEndianU16Parser,
     result::ParseResult,
@@ -13,16 +13,16 @@ pub struct LittleEndianNonZeroU16Parser;
 impl ParsableDefinition<'_> for LittleEndianNonZeroU16Parser {
     type Output = NonZeroU16;
 
-    type Error = NumericExpectation;
+    type Error = ExpectedNumberParseError;
 
     #[inline]
     fn error(&self) -> Self::Error {
-        NumericExpectation::LittleEndianNonZeroU16
+        ExpectedNumberParseError(NumericExpectation::LittleEndianNonZeroU16)
     }
 }
 
-impl Parsable<'_, [u8]> for LittleEndianNonZeroU16Parser {
-    fn parse(&self, parser: &mut Parser<[u8], Self::Error>) -> ParseResult<Self::Output> {
+impl<E: From<ExpectedNumberParseError>> Parsable<'_, [u8], E> for LittleEndianNonZeroU16Parser {
+    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
         let start = parser.position();
 
         let value = LittleEndianU16Parser.parse(parser)?;
@@ -32,7 +32,7 @@ impl Parsable<'_, [u8]> for LittleEndianNonZeroU16Parser {
 
             return parser.add_error_with_span_result(
                 start.span(end),
-                NumericExpectation::LittleEndianNonZeroU16,
+                ExpectedNumberParseError(NumericExpectation::LittleEndianNonZeroU16),
             );
         };
 
@@ -45,16 +45,16 @@ pub struct OptionalLittleEndianNonZeroU16Parser;
 impl ParsableDefinition<'_> for OptionalLittleEndianNonZeroU16Parser {
     type Output = Option<NonZeroU16>;
 
-    type Error = NumericExpectation;
+    type Error = ExpectedNumberParseError;
 
     #[inline]
     fn error(&self) -> Self::Error {
-        NumericExpectation::LittleEndianU16
+        ExpectedNumberParseError(NumericExpectation::LittleEndianU16)
     }
 }
 
-impl Parsable<'_, [u8]> for OptionalLittleEndianNonZeroU16Parser {
-    fn parse(&self, parser: &mut Parser<[u8], Self::Error>) -> ParseResult<Self::Output> {
+impl<E> Parsable<'_, [u8], E> for OptionalLittleEndianNonZeroU16Parser {
+    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
         let value = LittleEndianU16Parser.parse(parser)?;
 
         Ok(NonZeroU16::new(value))

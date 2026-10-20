@@ -13,53 +13,57 @@ pub trait ParsableDefinition<'input> {
     fn error(&self) -> Self::Error;
 }
 
-pub trait Parsable<'input, I: Input + ?Sized + 'input>: ParsableDefinition<'input> {
-    fn parse(&self, parser: &mut Parser<'input, I, Self::Error>) -> ParseResult<Self::Output>;
+pub trait Parsable<'input, I, E>: ParsableDefinition<'input>
+where
+    I: Input + ?Sized + 'input,
+{
+    fn parse(&self, parser: &mut Parser<'input, I, E>) -> ParseResult<Self::Output>;
 
-    fn try_parse(
-        &self,
-        parser: &mut Parser<'input, I, Self::Error>,
-    ) -> OptionParseResult<Self::Output> {
+    fn try_parse(&self, parser: &mut Parser<'input, I, E>) -> OptionParseResult<Self::Output> {
         self.parse(parser).into_option_parse_result()
     }
 
-    fn expect_renamed_with(
+    fn expect_renamed_with<E2: Into<E>>(
         &self,
-        parser: &mut Parser<'input, I, Self::Error>,
-        error_fn: impl FnOnce() -> Self::Error,
+        parser: &mut Parser<'input, I, E>,
+        error_fn: impl FnOnce() -> E2,
     ) -> HardParseResult<Self::Output> {
         self.parse(parser)
             .into_hard_parse_result_with(parser, error_fn)
     }
 
     #[inline]
-    fn expect_renamed(
+    fn expect_renamed<E2: Into<E>>(
         &self,
-        parser: &mut Parser<'input, I, Self::Error>,
-        error: Self::Error,
+        parser: &mut Parser<'input, I, E>,
+        error: E2,
     ) -> HardParseResult<Self::Output> {
         self.expect_renamed_with(parser, || error)
     }
 
     #[inline]
-    fn expect(&self, parser: &mut Parser<'input, I, Self::Error>) -> HardParseResult<Self::Output> {
+    fn expect(&self, parser: &mut Parser<'input, I, E>) -> HardParseResult<Self::Output>
+    where
+        E: From<Self::Error>,
+    {
         self.expect_renamed_with(parser, || self.error())
     }
 }
 
-pub trait ParsableWithContext<'input, I: Input + ?Sized + 'input, Context>:
-    ParsableDefinition<'input>
+pub trait ParsableWithContext<'input, I, E, C>: ParsableDefinition<'input>
+where
+    I: Input + ?Sized + 'input,
 {
     fn parse_with_context(
         &self,
-        parser: &mut Parser<'input, I, Self::Error>,
-        context: &mut Context,
+        parser: &mut Parser<'input, I, E>,
+        context: &mut C,
     ) -> ParseResult<Self::Output>;
 
     fn try_parse_with_context(
         &self,
-        parser: &mut Parser<'input, I, Self::Error>,
-        context: &mut Context,
+        parser: &mut Parser<'input, I, E>,
+        context: &mut C,
     ) -> OptionParseResult<Self::Output> {
         self.parse_with_context(parser, context)
             .into_option_parse_result()
@@ -67,41 +71,53 @@ pub trait ParsableWithContext<'input, I: Input + ?Sized + 'input, Context>:
 
     fn expect_with_context_renamed_with(
         &self,
-        parser: &mut Parser<'input, I, Self::Error>,
-        context: &mut Context,
+        parser: &mut Parser<'input, I, E>,
+        context: &mut C,
         error_fn: impl FnOnce() -> Self::Error,
-    ) -> HardParseResult<Self::Output> {
+    ) -> HardParseResult<Self::Output>
+    where
+        E: From<Self::Error>,
+    {
         self.parse_with_context(parser, context)
             .into_hard_parse_result_with(parser, error_fn)
     }
 
     fn expect_with_context_renamed(
         &self,
-        parser: &mut Parser<'input, I, Self::Error>,
-        context: &mut Context,
+        parser: &mut Parser<'input, I, E>,
+        context: &mut C,
         error: Self::Error,
-    ) -> HardParseResult<Self::Output> {
+    ) -> HardParseResult<Self::Output>
+    where
+        E: From<Self::Error>,
+    {
         self.expect_with_context_renamed_with(parser, context, || error)
     }
 
     #[inline]
     fn expect_with_context(
         &self,
-        parser: &mut Parser<'input, I, Self::Error>,
-        context: &mut Context,
-    ) -> HardParseResult<Self::Output> {
+        parser: &mut Parser<'input, I, E>,
+        context: &mut C,
+    ) -> HardParseResult<Self::Output>
+    where
+        E: From<Self::Error>,
+    {
         self.expect_with_context_renamed_with(parser, context, || self.error())
     }
 }
-
-impl<'input, I: Input + ?Sized + 'input, Context, P: Parsable<'input, I>>
-    ParsableWithContext<'input, I, Context> for P
-{
-    fn parse_with_context(
-        &self,
-        parser: &mut Parser<'input, I, Self::Error>,
-        _: &mut Context,
-    ) -> ParseResult<Self::Output> {
-        self.parse(parser)
-    }
-}
+//
+// impl<'input, I, E, Context, P> ParsableWithContext<'input, I, E, Context> for P
+// where
+//     I: Input + ?Sized + 'input,
+//     E,
+//     P: Parsable<'input, I, E>,
+// {
+//     fn parse_with_context(
+//         &self,
+//         parser: &mut Parser<'input, I, E>,
+//         _: &mut Context,
+//     ) -> ParseResult<Self::Output> {
+//         self.parse(parser)
+//     }
+// }

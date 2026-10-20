@@ -16,11 +16,13 @@ impl<'input, P: ParsableDefinition<'input> + ?Sized> ParsableDefinition<'input> 
     }
 }
 
-impl<'input, I: Input + ?Sized + 'input, P: Parsable<'input, I> + ?Sized> Parsable<'input, I>
-    for &P
+impl<'input, I, E, P> Parsable<'input, I, E> for &P
+where
+    I: Input + ?Sized + 'input,
+    P: Parsable<'input, I, E> + ?Sized,
 {
     #[inline]
-    fn parse(&self, parser: &mut Parser<'input, I, P::Error>) -> ParseResult<Self::Output> {
+    fn parse(&self, parser: &mut Parser<'input, I, E>) -> ParseResult<Self::Output> {
         (**self).parse(parser)
     }
 }

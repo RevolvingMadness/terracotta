@@ -2,7 +2,7 @@ use core::num::NonZeroI32;
 
 use crate::{
     parsable_traits::{Parsable, ParsableDefinition},
-    parse_error::NumericExpectation,
+    parse_error::{ExpectedNumberParseError, NumericExpectation},
     parser::Parser,
     parsers::numeric::little_endian::i32::LittleEndianI32Parser,
     result::ParseResult,
@@ -13,16 +13,16 @@ pub struct LittleEndianNonZeroI32Parser;
 impl ParsableDefinition<'_> for LittleEndianNonZeroI32Parser {
     type Output = NonZeroI32;
 
-    type Error = NumericExpectation;
+    type Error = ExpectedNumberParseError;
 
     #[inline]
     fn error(&self) -> Self::Error {
-        NumericExpectation::LittleEndianNonZeroI32
+        ExpectedNumberParseError(NumericExpectation::LittleEndianNonZeroI32)
     }
 }
 
-impl Parsable<'_, [u8]> for LittleEndianNonZeroI32Parser {
-    fn parse(&self, parser: &mut Parser<[u8], Self::Error>) -> ParseResult<Self::Output> {
+impl<E: From<ExpectedNumberParseError>> Parsable<'_, [u8], E> for LittleEndianNonZeroI32Parser {
+    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
         let start = parser.position();
 
         let value = LittleEndianI32Parser.parse(parser)?;
@@ -32,7 +32,7 @@ impl Parsable<'_, [u8]> for LittleEndianNonZeroI32Parser {
 
             return parser.add_error_with_span_result(
                 start.span(end),
-                NumericExpectation::LittleEndianNonZeroI32,
+                ExpectedNumberParseError(NumericExpectation::LittleEndianNonZeroI32),
             );
         };
 
@@ -45,16 +45,16 @@ pub struct OptionalLittleEndianNonZeroI32Parser;
 impl ParsableDefinition<'_> for OptionalLittleEndianNonZeroI32Parser {
     type Output = Option<NonZeroI32>;
 
-    type Error = NumericExpectation;
+    type Error = ExpectedNumberParseError;
 
     #[inline]
     fn error(&self) -> Self::Error {
-        NumericExpectation::LittleEndianI32
+        ExpectedNumberParseError(NumericExpectation::LittleEndianI32)
     }
 }
 
-impl Parsable<'_, [u8]> for OptionalLittleEndianNonZeroI32Parser {
-    fn parse(&self, parser: &mut Parser<[u8], Self::Error>) -> ParseResult<Self::Output> {
+impl<E> Parsable<'_, [u8], E> for OptionalLittleEndianNonZeroI32Parser {
+    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
         let value = LittleEndianI32Parser.parse(parser)?;
 
         Ok(NonZeroI32::new(value))

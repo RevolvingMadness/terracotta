@@ -1,6 +1,6 @@
 use crate::{
     parsable_traits::{Parsable, ParsableDefinition},
-    parse_error::NumericExpectation,
+    parse_error::{ExpectedNumberParseError, NumericExpectation},
     parser::Parser,
     result::ParseResult,
 };
@@ -10,16 +10,16 @@ pub struct I8Parser;
 impl ParsableDefinition<'_> for I8Parser {
     type Output = i8;
 
-    type Error = NumericExpectation;
+    type Error = ExpectedNumberParseError;
 
     #[inline]
     fn error(&self) -> Self::Error {
-        NumericExpectation::I8
+        ExpectedNumberParseError(NumericExpectation::I8)
     }
 }
 
-impl Parsable<'_, [u8]> for I8Parser {
-    fn parse(&self, parser: &mut Parser<[u8], Self::Error>) -> ParseResult<Self::Output> {
+impl<E> Parsable<'_, [u8], E> for I8Parser {
+    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
         let value = parser.advance_result()?;
 
         Ok(value as i8)

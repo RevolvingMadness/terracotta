@@ -1,52 +1,35 @@
 use core::{fmt::Debug, hash::Hash};
 
 use crate::{
-    input::{Input, token::Token},
+    input::Input,
     parsable_traits::{Parsable, ParsableDefinition},
     parser::Parser,
     result::{ParseFailure, ParseResult},
 };
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct ExactTokenParser<T: PartialEq> {
-    token: T,
-}
-
-impl<T: PartialEq> ExactTokenParser<T> {
-    #[inline]
-    #[must_use]
-    pub const fn new(token: T) -> Self {
-        Self { token }
-    }
-}
+pub struct ExactTokenParser<T>(pub T);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct ExpectedExactTokenParseError<T: Token> {
-    token: T,
-}
+pub struct ExpectedExactTokenParseError<T>(T);
 
-impl<T: Token> ExpectedExactTokenParseError<T> {
-    #[inline]
-    #[must_use]
-    pub const fn new(token: T) -> Self {
-        Self { token }
-    }
-}
-
-impl<T: Token> ParsableDefinition<'_> for ExactTokenParser<T> {
+impl<T: Clone> ParsableDefinition<'_> for ExactTokenParser<T> {
     type Output = T;
 
     type Error = ExpectedExactTokenParseError<T>;
 
     fn error(&self) -> Self::Error {
-        ExpectedExactTokenParseError::new(self.token.clone())
+        ExpectedExactTokenParseError(self.0.clone())
     }
 }
 
-impl<'input, I: Input + ?Sized + 'input> Parsable<'input, I> for ExactTokenParser<I::Token> {
-    fn parse(&self, parser: &mut Parser<'input, I, Self::Error>) -> ParseResult<Self::Output> {
+impl<'input, I, E> Parsable<'input, I, E> for ExactTokenParser<I::Token>
+where
+    I: Input + ?Sized + 'input,
+{
+    fn parse(&self, parser: &mut Parser<'input, I, E>) -> ParseResult<Self::Output> {
         parser
-            .advance_if_result(|token| *token == self.token)
+            .advance_if_result(|token| *token == self.0)
             .and_then(|token| token.ok_or(ParseFailure::Soft))
     }
 }

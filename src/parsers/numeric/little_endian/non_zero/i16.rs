@@ -2,7 +2,7 @@ use core::num::NonZeroI16;
 
 use crate::{
     parsable_traits::{Parsable, ParsableDefinition},
-    parse_error::NumericExpectation,
+    parse_error::{ExpectedNumberParseError, NumericExpectation},
     parser::Parser,
     parsers::numeric::little_endian::i16::LittleEndianI16Parser,
     result::ParseResult,
@@ -10,8 +10,8 @@ use crate::{
 
 pub struct LittleEndianNonZeroI16Parser;
 
-impl Parsable<'_, [u8]> for LittleEndianNonZeroI16Parser {
-    fn parse(&self, parser: &mut Parser<[u8], Self::Error>) -> ParseResult<Self::Output> {
+impl<E: From<ExpectedNumberParseError>> Parsable<'_, [u8], E> for LittleEndianNonZeroI16Parser {
+    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
         let start = parser.position();
 
         let value = LittleEndianI16Parser.parse(parser)?;
@@ -21,7 +21,7 @@ impl Parsable<'_, [u8]> for LittleEndianNonZeroI16Parser {
 
             return parser.add_error_with_span_result(
                 start.span(end),
-                NumericExpectation::LittleEndianNonZeroI16,
+                ExpectedNumberParseError(NumericExpectation::LittleEndianNonZeroI16),
             );
         };
 
@@ -32,18 +32,18 @@ impl Parsable<'_, [u8]> for LittleEndianNonZeroI16Parser {
 impl ParsableDefinition<'_> for LittleEndianNonZeroI16Parser {
     type Output = NonZeroI16;
 
-    type Error = NumericExpectation;
+    type Error = ExpectedNumberParseError;
 
     #[inline]
     fn error(&self) -> Self::Error {
-        NumericExpectation::LittleEndianNonZeroI16
+        ExpectedNumberParseError(NumericExpectation::LittleEndianNonZeroI16)
     }
 }
 
 pub struct OptionalLittleEndianNonZeroI16Parser;
 
-impl Parsable<'_, [u8]> for OptionalLittleEndianNonZeroI16Parser {
-    fn parse(&self, parser: &mut Parser<[u8], Self::Error>) -> ParseResult<Self::Output> {
+impl<E> Parsable<'_, [u8], E> for OptionalLittleEndianNonZeroI16Parser {
+    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
         let value = LittleEndianI16Parser.parse(parser)?;
 
         Ok(NonZeroI16::new(value))
@@ -53,10 +53,10 @@ impl Parsable<'_, [u8]> for OptionalLittleEndianNonZeroI16Parser {
 impl ParsableDefinition<'_> for OptionalLittleEndianNonZeroI16Parser {
     type Output = Option<NonZeroI16>;
 
-    type Error = NumericExpectation;
+    type Error = ExpectedNumberParseError;
 
     #[inline]
     fn error(&self) -> Self::Error {
-        NumericExpectation::LittleEndianI16
+        ExpectedNumberParseError(NumericExpectation::LittleEndianI16)
     }
 }

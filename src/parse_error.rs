@@ -97,6 +97,9 @@ impl Display for NumericExpectation {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct ExpectedNumberParseError(pub NumericExpectation);
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum DefaultParseError<T> {
     ExpectedEndOfInput,

@@ -8,13 +8,15 @@ use crate::{
     span::Span,
 };
 
-pub struct SpannedParser<'input, I: Input + ?Sized + 'input, P: Parsable<'input, I>> {
-    _phantom_data: PhantomData<&'input I>,
+pub struct SpannedParser<'input, I: Input + ?Sized + 'input, E, P: Parsable<'input, I, E>> {
+    _phantom_data: PhantomData<(&'input I, E)>,
     parsable: P,
 }
 
-impl<'input, I: Input + ?Sized + 'input, P: Parsable<'input, I>> ParsableDefinition<'input>
-    for SpannedParser<'input, I, P>
+impl<'input, I, E, P> ParsableDefinition<'input> for SpannedParser<'input, I, E, P>
+where
+    I: Input + ?Sized + 'input,
+    P: Parsable<'input, I, E>,
 {
     type Output = Spanned<P::Output>;
 
@@ -25,10 +27,12 @@ impl<'input, I: Input + ?Sized + 'input, P: Parsable<'input, I>> ParsableDefinit
     }
 }
 
-impl<'input, I: Input + ?Sized + 'input, P: Parsable<'input, I>> Parsable<'input, I>
-    for SpannedParser<'input, I, P>
+impl<'input, I, E, P> Parsable<'input, I, E> for SpannedParser<'input, I, E, P>
+where
+    I: Input + ?Sized + 'input,
+    P: Parsable<'input, I, E>,
 {
-    fn parse(&self, parser: &mut Parser<'input, I, Self::Error>) -> ParseResult<Self::Output> {
+    fn parse(&self, parser: &mut Parser<'input, I, E>) -> ParseResult<Self::Output> {
         let start = parser.position();
 
         let value = self.parsable.parse(parser)?;
@@ -42,12 +46,13 @@ impl<'input, I: Input + ?Sized + 'input, P: Parsable<'input, I>> Parsable<'input
     }
 }
 
-pub trait SpannedParserExt<'input, I: Input + ?Sized + 'input>:
-    Parsable<'input, I> + Sized
+pub trait SpannedParserExt<'input, I, E>: Parsable<'input, I, E> + Sized
+where
+    I: Input + ?Sized + 'input,
 {
     #[inline]
     #[must_use]
-    fn parse_spanned(self) -> SpannedParser<'input, I, Self> {
+    fn parse_spanned(self) -> SpannedParser<'input, I, E, Self> {
         SpannedParser {
             _phantom_data: PhantomData,
             parsable: self,
@@ -55,7 +60,12 @@ pub trait SpannedParserExt<'input, I: Input + ?Sized + 'input>:
     }
 }
 
-impl<'input, I: Input + ?Sized + 'input, P: Parsable<'input, I>> SpannedParserExt<'input, I> for P {}
+impl<'input, I, E, P> SpannedParserExt<'input, I, E> for P
+where
+    I: Input + ?Sized + 'input,
+    P: Parsable<'input, I, E>,
+{
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Spanned<T: ?Sized> {

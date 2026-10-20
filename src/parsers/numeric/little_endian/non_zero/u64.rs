@@ -2,7 +2,7 @@ use core::num::NonZeroU64;
 
 use crate::{
     parsable_traits::{Parsable, ParsableDefinition},
-    parse_error::NumericExpectation,
+    parse_error::{ExpectedNumberParseError, NumericExpectation},
     parser::Parser,
     parsers::numeric::little_endian::u64::LittleEndianU64Parser,
     result::ParseResult,
@@ -10,8 +10,8 @@ use crate::{
 
 pub struct LittleEndianNonZeroU64Parser;
 
-impl Parsable<'_, [u8]> for LittleEndianNonZeroU64Parser {
-    fn parse(&self, parser: &mut Parser<[u8], Self::Error>) -> ParseResult<Self::Output> {
+impl<E: From<ExpectedNumberParseError>> Parsable<'_, [u8], E> for LittleEndianNonZeroU64Parser {
+    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
         let start = parser.position();
 
         let value = LittleEndianU64Parser.parse(parser)?;
@@ -21,7 +21,7 @@ impl Parsable<'_, [u8]> for LittleEndianNonZeroU64Parser {
 
             return parser.add_error_with_span_result(
                 start.span(end),
-                NumericExpectation::LittleEndianNonZeroU64,
+                ExpectedNumberParseError(NumericExpectation::LittleEndianNonZeroU64),
             );
         };
 
@@ -32,17 +32,17 @@ impl Parsable<'_, [u8]> for LittleEndianNonZeroU64Parser {
 impl ParsableDefinition<'_> for LittleEndianNonZeroU64Parser {
     type Output = NonZeroU64;
 
-    type Error = NumericExpectation;
+    type Error = ExpectedNumberParseError;
 
     fn error(&self) -> Self::Error {
-        NumericExpectation::LittleEndianNonZeroU64
+        ExpectedNumberParseError(NumericExpectation::LittleEndianNonZeroU64)
     }
 }
 
 pub struct OptionalLittleEndianNonZeroU64Parser;
 
-impl Parsable<'_, [u8]> for OptionalLittleEndianNonZeroU64Parser {
-    fn parse(&self, parser: &mut Parser<[u8], Self::Error>) -> ParseResult<Self::Output> {
+impl<E> Parsable<'_, [u8], E> for OptionalLittleEndianNonZeroU64Parser {
+    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
         let value = LittleEndianU64Parser.parse(parser)?;
 
         Ok(NonZeroU64::new(value))
@@ -52,10 +52,10 @@ impl Parsable<'_, [u8]> for OptionalLittleEndianNonZeroU64Parser {
 impl ParsableDefinition<'_> for OptionalLittleEndianNonZeroU64Parser {
     type Output = Option<NonZeroU64>;
 
-    type Error = NumericExpectation;
+    type Error = ExpectedNumberParseError;
 
     #[inline]
     fn error(&self) -> Self::Error {
-        NumericExpectation::LittleEndianU64
+        ExpectedNumberParseError(NumericExpectation::LittleEndianU64)
     }
 }

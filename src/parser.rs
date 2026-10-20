@@ -39,13 +39,19 @@ impl ParserPosition {
 }
 
 #[derive(Debug)]
-pub struct Parser<'input, I: Input + ?Sized + 'input, E> {
+pub struct Parser<'input, I, E>
+where
+    I: Input + ?Sized + 'input,
+{
     input: &'input I,
     position: usize,
     errors: Vec<Spanned<E>>,
 }
 
-impl<'input, I: Input + ?Sized + 'input, E> Parser<'input, I, E> {
+impl<'input, I, E> Parser<'input, I, E>
+where
+    I: Input + ?Sized + 'input,
+{
     #[must_use]
     pub const fn new(input: &'input I) -> Self {
         Self {
@@ -55,8 +61,14 @@ impl<'input, I: Input + ?Sized + 'input, E> Parser<'input, I, E> {
         }
     }
 
-    pub fn add_error_with_span<S: Into<Span>>(&mut self, span: S, error: E) -> HardParseFailure {
+    pub fn add_error_with_span<S: Into<Span>, E2: Into<E>>(
+        &mut self,
+        span: S,
+        error: E2,
+    ) -> HardParseFailure {
         let span = span.into();
+
+        let error = error.into();
 
         self.errors.push(error.with_span(span));
 
@@ -64,25 +76,25 @@ impl<'input, I: Input + ?Sized + 'input, E> Parser<'input, I, E> {
     }
 
     #[inline]
-    pub fn add_error_with_span_result<S: Into<Span>, T>(
+    pub fn add_error_with_span_result<S: Into<Span>, E2: Into<E>, T>(
         &mut self,
         span: S,
-        error: E,
+        error: E2,
     ) -> ParseResult<T> {
         Err(ParseFailure::Hard(self.add_error_with_span(span, error)))
     }
 
     #[inline]
-    pub fn add_error_with_span_hard_result<S: Into<Span>, T>(
+    pub fn add_error_with_span_hard_result<S: Into<Span>, E2: Into<E>, T>(
         &mut self,
         span: S,
-        error: E,
+        error: E2,
     ) -> HardParseResult<T> {
         Err(self.add_error_with_span(span, error))
     }
 
     #[inline]
-    pub fn add_error(&mut self, error: E) -> HardParseFailure {
+    pub fn add_error<E2: Into<E>>(&mut self, error: E2) -> HardParseFailure {
         let character_len = self.peek().map_or(0, |token| token.len());
 
         let start = ParserPosition(self.position);
@@ -93,7 +105,7 @@ impl<'input, I: Input + ?Sized + 'input, E> Parser<'input, I, E> {
     }
 
     #[inline]
-    pub fn add_error_result<T>(&mut self, error: E) -> ParseResult<T> {
+    pub fn add_error_result<E2: Into<E>, T>(&mut self, error: E2) -> ParseResult<T> {
         Err(ParseFailure::Hard(self.add_error(error)))
     }
 

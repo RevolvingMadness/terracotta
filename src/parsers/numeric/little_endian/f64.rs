@@ -1,6 +1,6 @@
 use crate::{
     parsable_traits::{Parsable, ParsableDefinition},
-    parse_error::NumericExpectation,
+    parse_error::{ExpectedNumberParseError, NumericExpectation},
     parser::Parser,
     result::ParseResult,
 };
@@ -10,16 +10,16 @@ pub struct LittleEndianF64Parser;
 impl ParsableDefinition<'_> for LittleEndianF64Parser {
     type Output = f64;
 
-    type Error = NumericExpectation;
+    type Error = ExpectedNumberParseError;
 
     #[inline]
     fn error(&self) -> Self::Error {
-        NumericExpectation::LittleEndianF64
+        ExpectedNumberParseError(NumericExpectation::LittleEndianF64)
     }
 }
 
-impl Parsable<'_, [u8]> for LittleEndianF64Parser {
-    fn parse(&self, parser: &mut Parser<[u8], Self::Error>) -> ParseResult<Self::Output> {
+impl<E> Parsable<'_, [u8], E> for LittleEndianF64Parser {
+    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
         let bytes = parser.advance_len_exact(8)?;
 
         let bytes = <[u8; 8] as TryFrom<&[u8]>>::try_from(bytes).unwrap();

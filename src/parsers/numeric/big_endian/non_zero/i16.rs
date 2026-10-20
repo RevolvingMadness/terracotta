@@ -2,7 +2,7 @@ use core::num::NonZeroI16;
 
 use crate::{
     parsable_traits::{Parsable, ParsableDefinition},
-    parse_error::NumericExpectation,
+    parse_error::{ExpectedNumberParseError, NumericExpectation},
     parser::Parser,
     parsers::numeric::big_endian::i16::BigEndianI16Parser,
     result::ParseResult,
@@ -10,8 +10,8 @@ use crate::{
 
 pub struct BigEndianNonZeroI16Parser;
 
-impl Parsable<'_, [u8]> for BigEndianNonZeroI16Parser {
-    fn parse(&self, parser: &mut Parser<[u8], Self::Error>) -> ParseResult<Self::Output> {
+impl<E: From<ExpectedNumberParseError>> Parsable<'_, [u8], E> for BigEndianNonZeroI16Parser {
+    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
         let start = parser.position();
 
         let value = BigEndianI16Parser.parse(parser)?;
@@ -21,7 +21,7 @@ impl Parsable<'_, [u8]> for BigEndianNonZeroI16Parser {
 
             return parser.add_error_with_span_result(
                 start.span(end),
-                NumericExpectation::BigEndianNonZeroI16,
+                ExpectedNumberParseError(NumericExpectation::BigEndianNonZeroI16),
             );
         };
 
@@ -32,11 +32,11 @@ impl Parsable<'_, [u8]> for BigEndianNonZeroI16Parser {
 impl ParsableDefinition<'_> for BigEndianNonZeroI16Parser {
     type Output = NonZeroI16;
 
-    type Error = NumericExpectation;
+    type Error = ExpectedNumberParseError;
 
     #[inline]
     fn error(&self) -> Self::Error {
-        NumericExpectation::BigEndianNonZeroI16
+        ExpectedNumberParseError(NumericExpectation::BigEndianNonZeroI16)
     }
 }
 
@@ -45,16 +45,16 @@ pub struct OptionalBigEndianNonZeroI16Parser;
 impl ParsableDefinition<'_> for OptionalBigEndianNonZeroI16Parser {
     type Output = Option<NonZeroI16>;
 
-    type Error = NumericExpectation;
+    type Error = ExpectedNumberParseError;
 
     #[inline]
     fn error(&self) -> Self::Error {
-        NumericExpectation::BigEndianI16
+        ExpectedNumberParseError(NumericExpectation::BigEndianI16)
     }
 }
 
-impl Parsable<'_, [u8]> for OptionalBigEndianNonZeroI16Parser {
-    fn parse(&self, parser: &mut Parser<[u8], Self::Error>) -> ParseResult<Self::Output> {
+impl<E> Parsable<'_, [u8], E> for OptionalBigEndianNonZeroI16Parser {
+    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
         let value = BigEndianI16Parser.parse(parser)?;
 
         Ok(NonZeroI16::new(value))
