@@ -14,7 +14,7 @@ pub struct AnyToken<T> {
 
 pub struct ExpectedAnyTokenParseError;
 
-impl<'input, T> ParsableDefinition<'input> for AnyToken<T> {
+impl<T> ParsableDefinition<'_> for AnyToken<T> {
     type Output = T;
 
     type Error = ExpectedAnyTokenParseError;

@@ -38,7 +38,9 @@ impl ParsableDefinition<'_> for NonZeroU8Parser {
     }
 }
 
-impl Parsable<'_, [u8]> for Option<NonZeroU8> {
+pub struct OptionalNonZeroU8Parser;
+
+impl Parsable<'_, [u8]> for OptionalNonZeroU8Parser {
     fn parse(&self, parser: &mut Parser<[u8], Self::Error>) -> ParseResult<Self::Output> {
         let value = U8Parser.parse(parser)?;
 
@@ -46,7 +48,7 @@ impl Parsable<'_, [u8]> for Option<NonZeroU8> {
     }
 }
 
-impl ParsableDefinition<'_> for Option<NonZeroU8> {
+impl ParsableDefinition<'_> for OptionalNonZeroU8Parser {
     type Output = Option<NonZeroU8>;
 
     type Error = NumericExpectation;
