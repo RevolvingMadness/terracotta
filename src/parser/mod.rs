@@ -4,7 +4,7 @@ use crate::{
     failures::{ParseFailure, hard::HardParseFailure},
     input::{Input, token::Token},
     parser::position::ParserPosition,
-    results::{ParseResult, hard::HardParseResult, option::OptionTExt},
+    results::{ParseResult, option::OptionTExt},
     span::Span,
     spanned::{Spanned, SpannedExt},
 };
@@ -16,8 +16,8 @@ pub struct Parser<'input, I, E>
 where
     I: Input + ?Sized + 'input,
 {
-    input: &'input I,
-    position: usize,
+    pub input: &'input I,
+    pub position: ParserPosition,
     errors: Vec<Spanned<E>>,
 }
 
@@ -29,7 +29,7 @@ where
     pub const fn new(input: &'input I) -> Self {
         Self {
             input,
-            position: 0,
+            position: ParserPosition::start(),
             errors: Vec::new(),
         }
     }
@@ -49,31 +49,12 @@ where
     }
 
     #[inline]
-    pub fn add_error_with_span_result<S: Into<Span>, E2: Into<E>, T>(
-        &mut self,
-        span: S,
-        error: E2,
-    ) -> ParseResult<T> {
-        self.add_error_with_span(span, error).into_parse_result()
-    }
-
-    #[inline]
-    pub fn add_error_with_span_hard_result<S: Into<Span>, E2: Into<E>, T>(
-        &mut self,
-        span: S,
-        error: E2,
-    ) -> HardParseResult<T> {
-        self.add_error_with_span(span, error)
-            .into_hard_parse_result()
-    }
-
-    #[inline]
     pub fn add_error<E2: Into<E>>(&mut self, error: E2) -> HardParseFailure {
         let character_len = self.peek().map_or(0, |token| token.len());
 
-        let start = ParserPosition(self.position);
+        let start = self.position;
 
-        let end = ParserPosition(self.position + character_len);
+        let end = start.advanced_unchecked(character_len);
 
         self.add_error_with_span(start..end, error)
     }
@@ -104,40 +85,31 @@ where
     #[inline]
     #[must_use]
     pub const fn start_position(&self) -> ParserPosition {
-        ParserPosition(0)
+        ParserPosition::start()
     }
 
     #[inline]
     #[must_use]
     pub fn end_position(&self) -> ParserPosition {
-        ParserPosition(self.input_len())
+        ParserPosition::new_unchecked(self.input_len())
     }
 
     #[inline]
     #[must_use]
     pub const fn consumed_span(&self) -> Span {
-        Span {
-            start: self.start_position(),
-            end: self.position(),
-        }
+        Span::new_unchecked(self.start_position(), self.position)
     }
 
     #[inline]
     #[must_use]
     pub fn remaining_span(&self) -> Span {
-        Span {
-            start: self.position(),
-            end: self.end_position(),
-        }
+        Span::new(self.position, self.end_position())
     }
 
     #[inline]
     #[must_use]
     pub fn whole_input_span(&self) -> Span {
-        Span {
-            start: self.start_position(),
-            end: self.end_position(),
-        }
+        Span::new_unchecked(self.start_position(), self.end_position())
     }
 
     #[inline]
@@ -155,52 +127,36 @@ where
     #[inline]
     #[must_use]
     pub fn peek(&self) -> Option<I::Token> {
-        self.input.peek(self.position())
+        self.input.peek(self.position)
     }
 
     pub fn peek_len(&self, len: usize) -> ParseResult<I::Token> {
-        self.input
-            .peek_len(self.position(), len)
-            .into_parse_result()
+        self.input.peek_len(self.position, len).into_parse_result()
     }
 
     pub fn advance(&mut self) -> Option<I::Token> {
         let token = self.peek()?;
 
-        self.position += token.len();
+        self.position.advance_unchecked(token.len());
 
         Some(token)
     }
 
-    pub fn advance_result(&mut self) -> ParseResult<I::Token> {
-        self.advance().into_parse_result()
-    }
-
-    pub fn advance_if(
-        &mut self,
-        predicate: impl FnOnce(&I::Token) -> bool,
-    ) -> Option<Option<I::Token>> {
+    pub fn advance_if(&mut self, predicate: impl FnOnce(&I::Token) -> bool) -> Option<I::Token> {
         let token = self.peek()?;
 
         if predicate(&token) {
-            self.position += token.len();
+            self.position.advance_unchecked(token.len());
 
-            Some(Some(token))
+            Some(token)
         } else {
-            Some(None)
+            None
         }
-    }
-
-    pub fn advance_if_result(
-        &mut self,
-        predicate: impl FnOnce(&I::Token) -> bool,
-    ) -> ParseResult<Option<I::Token>> {
-        self.advance_if(predicate).into_parse_result()
     }
 
     #[must_use]
     pub fn advance_len(&mut self, len: usize) -> &'input I {
-        let start = self.position();
+        let start = self.position;
 
         for _ in 0..len {
             if self.advance().is_none() {
@@ -208,38 +164,27 @@ where
             }
         }
 
-        self.input.slice(start.span(self.position()))
+        self.input.slice(start.span(self.position))
     }
 
     pub fn advance_len_exact(&mut self, len: usize) -> ParseResult<&'input I> {
-        let start = self.position();
+        let start = self.position;
 
         for _ in 0..len {
             if self.advance().is_none() {
-                self.restore(start);
+                self.position = start;
 
                 return Err(ParseFailure::Soft);
             }
         }
 
-        Ok(self.input.slice(start.span(self.position())))
-    }
-
-    #[inline]
-    #[must_use]
-    pub const fn position(&self) -> ParserPosition {
-        ParserPosition(self.position)
+        Ok(self.input.slice(start.span(self.position)))
     }
 
     #[inline]
     #[must_use]
     pub fn is_at_end(&self) -> bool {
-        self.position() >= self.end_position()
-    }
-
-    #[inline]
-    pub const fn restore(&mut self, ParserPosition(position): ParserPosition) {
-        self.position = position;
+        self.position >= self.end_position()
     }
 
     #[inline]
@@ -251,7 +196,7 @@ where
     #[inline]
     #[must_use]
     pub fn slice_current_to_position(&self, other: ParserPosition) -> &'input I {
-        self.slice(self.position().span(other))
+        self.slice(self.position.span(other))
     }
 
     #[inline]
@@ -263,7 +208,7 @@ where
     #[inline]
     #[must_use]
     pub fn slice_len(&self, len: usize) -> &'input I {
-        self.input.slice_len(self.position(), len)
+        self.input.slice_len(self.position, len)
     }
 
     #[inline]
@@ -276,22 +221,22 @@ where
     where
         F: FnMut(&I::Token) -> bool,
     {
-        let start = self.position();
+        let start = self.position;
 
         while let Some(token) = self.peek() {
             if predicate(&token) {
                 break;
             }
 
-            self.position += token.len();
+            self.position.advance_unchecked(token.len());
         }
 
-        let end = self.position();
+        let end = self.position;
 
         if end == start {
             Err(ParseFailure::Soft)
         } else {
-            Ok(self.slice(Span { start, end }))
+            Ok(self.slice(Span::new(start, end)))
         }
     }
 

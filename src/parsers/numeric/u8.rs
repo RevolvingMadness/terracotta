@@ -1,7 +1,7 @@
 use crate::{
     parse_error::{ExpectedNumberParseError, NumericExpectation},
     parser::Parser,
-    results::ParseResult,
+    results::{ParseResult, option::OptionTExt},
     traits::{parsable::Parsable, parsable_definition::ParsableDefinition},
 };
 
@@ -20,7 +20,7 @@ impl ParsableDefinition<'_> for U8Parser {
 
 impl<E> Parsable<'_, [u8], E> for U8Parser {
     fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
-        let value = parser.advance_result()?;
+        let value = parser.advance().into_parse_result()?;
 
         Ok(value)
     }

@@ -23,17 +23,19 @@ impl ParsableDefinition<'_> for BigEndianNonZeroU64Parser {
 
 impl<E: From<ExpectedNumberParseError>> Parsable<'_, [u8], E> for BigEndianNonZeroU64Parser {
     fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
-        let start = parser.position();
+        let start = parser.position;
 
         let value = BigEndianU64Parser.parse(parser)?;
 
         let Some(value) = NonZeroU64::new(value) else {
-            let end = parser.position();
+            let end = parser.position;
 
-            return parser.add_error_with_span_result(
-                start.span(end),
-                ExpectedNumberParseError(NumericExpectation::BigEndianNonZeroU64),
-            );
+            return parser
+                .add_error_with_span(
+                    start.span(end),
+                    ExpectedNumberParseError(NumericExpectation::BigEndianNonZeroU64),
+                )
+                .into_parse_result();
         };
 
         Ok(value)

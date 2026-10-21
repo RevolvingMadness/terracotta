@@ -9,31 +9,21 @@ impl Input for str {
     }
 
     #[inline]
-    fn slice(
-        &self,
-        Span {
-            start: ParserPosition(start),
-            end: ParserPosition(end),
-        }: Span,
-    ) -> &Self {
-        &self[start..end]
+    fn slice(&self, span: Span) -> &Self {
+        &self[span.start().position()..span.end().position()]
     }
 
     #[inline]
-    fn starts_with_slice(&self, ParserPosition(position): ParserPosition, pattern: &Self) -> bool {
-        self[position..].starts_with(pattern)
+    fn starts_with_slice(&self, position: ParserPosition, pattern: &Self) -> bool {
+        self[position.position()..].starts_with(pattern)
     }
 
-    fn peek_len(
-        &self,
-        ParserPosition(position): ParserPosition,
-        len: usize,
-    ) -> Option<Self::Token> {
-        self[position..].chars().nth(len)
+    fn peek_len(&self, position: ParserPosition, len: usize) -> Option<Self::Token> {
+        self[position.position()..].chars().nth(len)
     }
 
-    fn slice_len(&self, ParserPosition(position): ParserPosition, len: usize) -> &Self {
-        let remaining = &self[position..];
+    fn slice_len(&self, position: ParserPosition, len: usize) -> &Self {
+        let remaining = &self[position.position()..];
 
         let end = remaining
             .char_indices()

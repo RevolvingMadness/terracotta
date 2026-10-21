@@ -23,17 +23,19 @@ impl ParsableDefinition<'_> for LittleEndianNonZeroI32Parser {
 
 impl<E: From<ExpectedNumberParseError>> Parsable<'_, [u8], E> for LittleEndianNonZeroI32Parser {
     fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
-        let start = parser.position();
+        let start = parser.position;
 
         let value = LittleEndianI32Parser.parse(parser)?;
 
         let Some(value) = NonZeroI32::new(value) else {
-            let end = parser.position();
+            let end = parser.position;
 
-            return parser.add_error_with_span_result(
-                start.span(end),
-                ExpectedNumberParseError(NumericExpectation::LittleEndianNonZeroI32),
-            );
+            return parser
+                .add_error_with_span(
+                    start.span(end),
+                    ExpectedNumberParseError(NumericExpectation::LittleEndianNonZeroI32),
+                )
+                .into_parse_result();
         };
 
         Ok(value)

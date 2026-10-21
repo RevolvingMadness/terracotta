@@ -12,17 +12,19 @@ pub struct NonZeroU8Parser;
 
 impl<E: From<ExpectedNumberParseError>> Parsable<'_, [u8], E> for NonZeroU8Parser {
     fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
-        let start = parser.position();
+        let start = parser.position;
 
         let value = U8Parser.parse(parser)?;
 
         let Some(value) = NonZeroU8::new(value) else {
-            let end = parser.position();
+            let end = parser.position;
 
-            return parser.add_error_with_span_result(
-                start.span(end),
-                ExpectedNumberParseError(NumericExpectation::NonZeroU8),
-            );
+            return parser
+                .add_error_with_span(
+                    start.span(end),
+                    ExpectedNumberParseError(NumericExpectation::NonZeroU8),
+                )
+                .into_parse_result();
         };
 
         Ok(value)

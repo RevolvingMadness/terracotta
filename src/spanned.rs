@@ -33,11 +33,11 @@ where
     P: Parsable<'input, I, E>,
 {
     fn parse(&self, parser: &mut Parser<'input, I, E>) -> ParseResult<Self::Output> {
-        let start = parser.position();
+        let start = parser.position;
 
         let value = self.parsable.parse(parser)?;
 
-        let end = parser.position();
+        let end = parser.position;
 
         Ok(Spanned {
             span: start.span(end),

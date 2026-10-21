@@ -1,10 +1,9 @@
 use core::{fmt::Debug, hash::Hash};
 
 use crate::{
-    failures::ParseFailure,
     input::Input,
     parser::Parser,
-    results::ParseResult,
+    results::{ParseResult, option::OptionTExt},
     traits::{parsable::Parsable, parsable_definition::ParsableDefinition},
 };
 
@@ -30,7 +29,7 @@ where
 {
     fn parse(&self, parser: &mut Parser<'input, I, E>) -> ParseResult<Self::Output> {
         parser
-            .advance_if_result(|token| *token == self.0)
-            .and_then(|token| token.ok_or(ParseFailure::Soft))
+            .advance_if(|token| *token == self.0)
+            .into_parse_result()
     }
 }

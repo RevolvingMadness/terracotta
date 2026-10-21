@@ -3,7 +3,7 @@ use core::{fmt::Debug, hash::Hash, marker::PhantomData};
 use crate::{
     input::Input,
     parser::Parser,
-    results::ParseResult,
+    results::{ParseResult, option::OptionTExt},
     traits::{parsable::Parsable, parsable_definition::ParsableDefinition},
 };
 
@@ -39,6 +39,6 @@ where
     I: Input + ?Sized + 'input,
 {
     fn parse(&self, parser: &mut Parser<I, E>) -> ParseResult<Self::Output> {
-        parser.advance_result()
+        parser.advance().into_parse_result()
     }
 }

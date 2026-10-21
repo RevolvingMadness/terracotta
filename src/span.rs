@@ -7,8 +7,8 @@ use crate::parser::position::ParserPosition;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Span {
-    pub(crate) start: ParserPosition,
-    pub(crate) end: ParserPosition,
+    start: ParserPosition,
+    end: ParserPosition,
 }
 
 impl From<Span> for Range<ParserPosition> {
@@ -18,13 +18,8 @@ impl From<Span> for Range<ParserPosition> {
 }
 
 impl From<Span> for Range<usize> {
-    fn from(
-        Span {
-            start: ParserPosition(start),
-            end: ParserPosition(end),
-        }: Span,
-    ) -> Self {
-        start..end
+    fn from(Span { start, end }: Span) -> Self {
+        start.position()..end.position()
     }
 }
 
@@ -46,11 +41,11 @@ impl RangeBounds<ParserPosition> for Span {
 
 impl RangeBounds<usize> for Span {
     fn start_bound(&self) -> Bound<&usize> {
-        Bound::Included(&self.start.0)
+        Bound::Included(self.start.position_ref())
     }
 
     fn end_bound(&self) -> Bound<&usize> {
-        Bound::Excluded(&self.end.0)
+        Bound::Excluded(self.end.position_ref())
     }
 }
 
@@ -65,25 +60,37 @@ impl Display for Span {
 }
 
 impl Span {
+    #[inline]
+    #[must_use]
+    pub const fn new_unchecked(start: ParserPosition, end: ParserPosition) -> Self {
+        Self { start, end }
+    }
+
     #[must_use]
     pub const fn new(first: ParserPosition, second: ParserPosition) -> Self {
-        if first.0 > second.0 {
-            Self {
-                start: second,
-                end: first,
-            }
+        if first.position() > second.position() {
+            Self::new_unchecked(second, first)
         } else {
-            Self {
-                start: first,
-                end: second,
-            }
+            Self::new_unchecked(first, second)
         }
+    }
+
+    #[inline]
+    #[must_use]
+    pub const fn start_ref(&self) -> &ParserPosition {
+        &self.start
     }
 
     #[inline]
     #[must_use]
     pub const fn start(&self) -> ParserPosition {
         self.start
+    }
+
+    #[inline]
+    #[must_use]
+    pub const fn end_ref(&self) -> &ParserPosition {
+        &self.end
     }
 
     #[inline]
@@ -101,16 +108,16 @@ impl Span {
     #[inline]
     #[must_use]
     pub const fn is_empty(&self) -> bool {
-        self.end.0 == self.start.0
+        self.end.position() == self.start.position()
     }
 
     #[must_use]
     pub const fn expand(mut self, other: ParserPosition) -> Self {
-        if other.0 < self.start.0 {
+        if other.position() < self.start.position() {
             self.start = other;
         }
 
-        if other.0 > self.end.0 {
+        if other.position() > self.end.position() {
             self.end = other;
         }
 
@@ -119,11 +126,11 @@ impl Span {
 
     #[must_use]
     pub const fn merge(mut self, other: Self) -> Self {
-        if other.start.0 < self.start.0 {
+        if other.start.position() < self.start.position() {
             self.start = other.start;
         }
 
-        if other.end.0 > self.end.0 {
+        if other.end.position() > self.end.position() {
             self.end = other.end;
         }
 

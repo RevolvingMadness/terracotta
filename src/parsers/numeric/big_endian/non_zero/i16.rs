@@ -12,17 +12,19 @@ pub struct BigEndianNonZeroI16Parser;
 
 impl<E: From<ExpectedNumberParseError>> Parsable<'_, [u8], E> for BigEndianNonZeroI16Parser {
     fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
-        let start = parser.position();
+        let start = parser.position;
 
         let value = BigEndianI16Parser.parse(parser)?;
 
         let Some(value) = NonZeroI16::new(value) else {
-            let end = parser.position();
+            let end = parser.position;
 
-            return parser.add_error_with_span_result(
-                start.span(end),
-                ExpectedNumberParseError(NumericExpectation::BigEndianNonZeroI16),
-            );
+            return parser
+                .add_error_with_span(
+                    start.span(end),
+                    ExpectedNumberParseError(NumericExpectation::BigEndianNonZeroI16),
+                )
+                .into_parse_result();
         };
 
         Ok(value)

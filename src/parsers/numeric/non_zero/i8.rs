@@ -22,17 +22,19 @@ impl ParsableDefinition<'_> for NonZeroI8Parser {
 
 impl<E: From<ExpectedNumberParseError>> Parsable<'_, [u8], E> for NonZeroI8Parser {
     fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
-        let start = parser.position();
+        let start = parser.position;
 
         let value = I8Parser.parse(parser)?;
 
         let Some(value) = NonZeroI8::new(value) else {
-            let end = parser.position();
+            let end = parser.position;
 
-            return parser.add_error_with_span_result(
-                start.span(end),
-                ExpectedNumberParseError(NumericExpectation::NonZeroI8),
-            );
+            return parser
+                .add_error_with_span(
+                    start.span(end),
+                    ExpectedNumberParseError(NumericExpectation::NonZeroI8),
+                )
+                .into_parse_result();
         };
 
         Ok(value)
