@@ -20,7 +20,7 @@ impl<'input> ParsableDefinition<'input> for str {
     }
 }
 
-impl<'input, E: From<Self::Error>> Parsable<'input, Self, E> for str {
+impl<'input, E> Parsable<'input, Self, E> for str {
     fn parse(&self, parser: &mut Parser<'input, Self, E>) -> ParseResult<Self::Output> {
         if !parser.slice_starts_with(parser.position(), self) {
             return Err(ParseFailure::Soft);

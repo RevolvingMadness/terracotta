@@ -11,31 +11,35 @@ use crate::{
     },
 };
 
-fn parse_fully<'input, I, ParserError, Output, ParsableError>(
+fn parse_fully<'input, I, E, Output, ParsableError>(
     input: &'input I,
-    parse: impl FnOnce(&mut Parser<'input, I, ParserError>) -> Result<Output, ParsableError>,
-) -> Result<Output, Vec<Spanned<ParserError>>>
+    parse: impl FnOnce(&mut Parser<'input, I, E>) -> Result<Output, ParsableError>,
+) -> Result<Output, Vec<Spanned<E>>>
 where
     I: Input + ?Sized + 'input,
-    ParserError: From<ExpectedEndOfInputParseError>,
+    E: From<ExpectedEndOfInputParseError>,
 {
     let mut parser = Parser::new(input);
 
     let result = parse(&mut parser);
 
     if parser.has_no_errors() && !parser.is_at_end() {
-        parser.add_error(ParserError::from(ExpectedEndOfInputParseError));
+        parser.add_error(E::from(ExpectedEndOfInputParseError));
     }
 
     let errors = parser.finish();
 
-    result.map_err(|_| errors)
+    if errors.is_empty() {
+        result.map_err(|_| errors)
+    } else {
+        Err(errors)
+    }
 }
 
-fn parse_fully_allow_trailing<'input, I, ParserError, Output, ParsableError>(
+fn parse_fully_allow_trailing<'input, I, E, Output, ParsableError>(
     input: &'input I,
-    parse: impl FnOnce(&mut Parser<'input, I, ParserError>) -> Result<Output, ParsableError>,
-) -> Result<Output, Vec<Spanned<ParserError>>>
+    parse: impl FnOnce(&mut Parser<'input, I, E>) -> Result<Output, ParsableError>,
+) -> Result<Output, Vec<Spanned<E>>>
 where
     I: Input + ?Sized + 'input,
 {
@@ -45,7 +49,11 @@ where
 
     let errors = parser.finish();
 
-    result.map_err(|_| errors)
+    if errors.is_empty() {
+        result.map_err(|_| errors)
+    } else {
+        Err(errors)
+    }
 }
 
 pub trait InputExt<'input>: Input {
@@ -112,7 +120,7 @@ pub trait InputExt<'input>: Input {
     >(
         &'input self,
         parsable: &P,
-    ) -> Result<P::Output, Vec<Spanned<P::Error>>> {
+    ) -> Result<P::Output, Vec<Spanned<E>>> {
         parse_fully(self, |parser| parsable.expect(parser))
     }
 
@@ -139,7 +147,10 @@ pub trait InputExt<'input>: Input {
     }
 
     #[inline]
-    fn try_parse_fully_allow_trailing<E, P: Parsable<'input, Self, E>>(
+    fn try_parse_fully_allow_trailing<
+        E,
+        P: ParsableDefinition<'input, Error = E> + Parsable<'input, Self, E>,
+    >(
         &'input self,
         parsable: &P,
     ) -> Result<Option<P::Output>, Vec<Spanned<E>>> {

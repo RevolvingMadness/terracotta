@@ -30,7 +30,7 @@ impl<T> ParsableDefinition<'_> for AnyTokenParser<T> {
     type Error = ExpectedAnyTokenParseError;
 
     fn error(&self) -> Self::Error {
-        todo!()
+        ExpectedAnyTokenParseError
     }
 }
 
