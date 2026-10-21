@@ -1,7 +1,7 @@
 use core::num::NonZeroI16;
 
 use crate::{
-    parse_error::{ExpectedNumberParseError, NumericExpectation},
+    parse_error::{Endianness, ExpectedNumberParseError, NumericExpectation},
     parser::Parser,
     parsers::numeric::little_endian::i16::LittleEndianI16Parser,
     results::ParseResult,
@@ -14,15 +14,19 @@ impl<E: From<ExpectedNumberParseError>> Parsable<'_, [u8], E> for LittleEndianNo
     fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
         let start = parser.position;
 
-        let value = LittleEndianI16Parser.parse(parser)?;
+        let value = OptionalLittleEndianNonZeroI16Parser.parse(parser)?;
 
-        let Some(value) = NonZeroI16::new(value) else {
+        let Some(value) = value else {
             let end = parser.position;
 
             return parser
                 .add_error_with_span(
                     start.span(end),
-                    ExpectedNumberParseError(NumericExpectation::LittleEndianNonZeroI16),
+                    ExpectedNumberParseError(NumericExpectation::Short {
+                        signed: true,
+                        non_zero: true,
+                        endianness: Endianness::Little,
+                    }),
                 )
                 .into_parse_result();
         };
@@ -38,7 +42,11 @@ impl ParsableDefinition<'_> for LittleEndianNonZeroI16Parser {
 
     #[inline]
     fn error(&self) -> Self::Error {
-        ExpectedNumberParseError(NumericExpectation::LittleEndianNonZeroI16)
+        ExpectedNumberParseError(NumericExpectation::Short {
+            signed: true,
+            non_zero: true,
+            endianness: Endianness::Little,
+        })
     }
 }
 
@@ -59,6 +67,10 @@ impl ParsableDefinition<'_> for OptionalLittleEndianNonZeroI16Parser {
 
     #[inline]
     fn error(&self) -> Self::Error {
-        ExpectedNumberParseError(NumericExpectation::LittleEndianI16)
+        ExpectedNumberParseError(NumericExpectation::Short {
+            signed: true,
+            non_zero: false,
+            endianness: Endianness::Little,
+        })
     }
 }

@@ -1,5 +1,5 @@
 use crate::{
-    parse_error::{ExpectedNumberParseError, NumericExpectation},
+    parse_error::{Endianness, ExpectedNumberParseError, NumericExpectation},
     parser::Parser,
     results::ParseResult,
     traits::{parsable::Parsable, parsable_definition::ParsableDefinition},
@@ -13,7 +13,9 @@ impl ParsableDefinition<'_> for BigEndianF64Parser {
     type Error = ExpectedNumberParseError;
 
     fn error(&self) -> Self::Error {
-        ExpectedNumberParseError(NumericExpectation::BigEndianF64)
+        ExpectedNumberParseError(NumericExpectation::Double {
+            endianness: Endianness::Big,
+        })
     }
 }
 

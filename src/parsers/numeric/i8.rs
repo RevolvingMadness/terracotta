@@ -14,7 +14,10 @@ impl ParsableDefinition<'_> for I8Parser {
 
     #[inline]
     fn error(&self) -> Self::Error {
-        ExpectedNumberParseError(NumericExpectation::I8)
+        ExpectedNumberParseError(NumericExpectation::Byte {
+            signed: true,
+            non_zero: false,
+        })
     }
 }
 

@@ -1,7 +1,7 @@
 use core::num::NonZeroU64;
 
 use crate::{
-    parse_error::{ExpectedNumberParseError, NumericExpectation},
+    parse_error::{Endianness, ExpectedNumberParseError, NumericExpectation},
     parser::Parser,
     parsers::numeric::big_endian::u64::BigEndianU64Parser,
     results::ParseResult,
@@ -17,7 +17,11 @@ impl ParsableDefinition<'_> for BigEndianNonZeroU64Parser {
 
     #[inline]
     fn error(&self) -> Self::Error {
-        ExpectedNumberParseError(NumericExpectation::BigEndianNonZeroU64)
+        ExpectedNumberParseError(NumericExpectation::Long {
+            signed: false,
+            non_zero: true,
+            endianness: Endianness::Big,
+        })
     }
 }
 
@@ -25,15 +29,19 @@ impl<E: From<ExpectedNumberParseError>> Parsable<'_, [u8], E> for BigEndianNonZe
     fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
         let start = parser.position;
 
-        let value = BigEndianU64Parser.parse(parser)?;
+        let value = OptionalBigEndianNonZeroU64Parser.parse(parser)?;
 
-        let Some(value) = NonZeroU64::new(value) else {
+        let Some(value) = value else {
             let end = parser.position;
 
             return parser
                 .add_error_with_span(
                     start.span(end),
-                    ExpectedNumberParseError(NumericExpectation::BigEndianNonZeroU64),
+                    ExpectedNumberParseError(NumericExpectation::Long {
+                        signed: false,
+                        non_zero: true,
+                        endianness: Endianness::Big,
+                    }),
                 )
                 .into_parse_result();
         };
@@ -51,7 +59,11 @@ impl ParsableDefinition<'_> for OptionalBigEndianNonZeroU64Parser {
 
     #[inline]
     fn error(&self) -> Self::Error {
-        ExpectedNumberParseError(NumericExpectation::BigEndianU64)
+        ExpectedNumberParseError(NumericExpectation::Long {
+            signed: false,
+            non_zero: false,
+            endianness: Endianness::Big,
+        })
     }
 }
 

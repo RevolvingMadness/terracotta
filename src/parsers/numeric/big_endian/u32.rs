@@ -1,5 +1,5 @@
 use crate::{
-    parse_error::{ExpectedNumberParseError, NumericExpectation},
+    parse_error::{Endianness, ExpectedNumberParseError, NumericExpectation},
     parser::Parser,
     results::ParseResult,
     traits::{parsable::Parsable, parsable_definition::ParsableDefinition},
@@ -24,6 +24,10 @@ impl ParsableDefinition<'_> for BigEndianU32Parser {
 
     #[inline]
     fn error(&self) -> Self::Error {
-        ExpectedNumberParseError(NumericExpectation::BigEndianU32)
+        ExpectedNumberParseError(NumericExpectation::Integer {
+            signed: false,
+            non_zero: false,
+            endianness: Endianness::Big,
+        })
     }
 }

@@ -1,7 +1,7 @@
 use core::num::NonZeroU64;
 
 use crate::{
-    parse_error::{ExpectedNumberParseError, NumericExpectation},
+    parse_error::{Endianness, ExpectedNumberParseError, NumericExpectation},
     parser::Parser,
     parsers::numeric::little_endian::u64::LittleEndianU64Parser,
     results::ParseResult,
@@ -14,15 +14,19 @@ impl<E: From<ExpectedNumberParseError>> Parsable<'_, [u8], E> for LittleEndianNo
     fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
         let start = parser.position;
 
-        let value = LittleEndianU64Parser.parse(parser)?;
+        let value = OptionalLittleEndianNonZeroU64Parser.parse(parser)?;
 
-        let Some(value) = NonZeroU64::new(value) else {
+        let Some(value) = value else {
             let end = parser.position;
 
             return parser
                 .add_error_with_span(
                     start.span(end),
-                    ExpectedNumberParseError(NumericExpectation::LittleEndianNonZeroU64),
+                    ExpectedNumberParseError(NumericExpectation::Long {
+                        signed: false,
+                        non_zero: true,
+                        endianness: Endianness::Little,
+                    }),
                 )
                 .into_parse_result();
         };
@@ -37,7 +41,11 @@ impl ParsableDefinition<'_> for LittleEndianNonZeroU64Parser {
     type Error = ExpectedNumberParseError;
 
     fn error(&self) -> Self::Error {
-        ExpectedNumberParseError(NumericExpectation::LittleEndianNonZeroU64)
+        ExpectedNumberParseError(NumericExpectation::Long {
+            signed: false,
+            non_zero: true,
+            endianness: Endianness::Little,
+        })
     }
 }
 
@@ -58,6 +66,10 @@ impl ParsableDefinition<'_> for OptionalLittleEndianNonZeroU64Parser {
 
     #[inline]
     fn error(&self) -> Self::Error {
-        ExpectedNumberParseError(NumericExpectation::LittleEndianU64)
+        ExpectedNumberParseError(NumericExpectation::Long {
+            signed: false,
+            non_zero: false,
+            endianness: Endianness::Little,
+        })
     }
 }

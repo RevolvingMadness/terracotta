@@ -1,5 +1,5 @@
 use crate::{
-    parse_error::{ExpectedNumberParseError, NumericExpectation},
+    parse_error::{Endianness, ExpectedNumberParseError, NumericExpectation},
     parser::Parser,
     results::ParseResult,
     traits::{parsable::Parsable, parsable_definition::ParsableDefinition},
@@ -14,7 +14,11 @@ impl ParsableDefinition<'_> for LittleEndianI16Parser {
 
     #[inline]
     fn error(&self) -> Self::Error {
-        ExpectedNumberParseError(NumericExpectation::LittleEndianI16)
+        ExpectedNumberParseError(NumericExpectation::Short {
+            signed: true,
+            non_zero: false,
+            endianness: Endianness::Little,
+        })
     }
 }
 

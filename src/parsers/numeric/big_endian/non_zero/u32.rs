@@ -1,7 +1,7 @@
 use core::num::NonZeroU32;
 
 use crate::{
-    parse_error::{ExpectedNumberParseError, NumericExpectation},
+    parse_error::{Endianness, ExpectedNumberParseError, NumericExpectation},
     parser::Parser,
     parsers::numeric::big_endian::u32::BigEndianU32Parser,
     results::ParseResult,
@@ -14,15 +14,19 @@ impl<E: From<ExpectedNumberParseError>> Parsable<'_, [u8], E> for BigEndianNonZe
     fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
         let start = parser.position;
 
-        let value = BigEndianU32Parser.parse(parser)?;
+        let value = OptionalBigEndianNonZeroU32Parser.parse(parser)?;
 
-        let Some(value) = NonZeroU32::new(value) else {
+        let Some(value) = value else {
             let end = parser.position;
 
             return parser
                 .add_error_with_span(
                     start.span(end),
-                    ExpectedNumberParseError(NumericExpectation::BigEndianNonZeroU32),
+                    ExpectedNumberParseError(NumericExpectation::Integer {
+                        signed: false,
+                        non_zero: true,
+                        endianness: Endianness::Big,
+                    }),
                 )
                 .into_parse_result();
         };
@@ -38,7 +42,11 @@ impl ParsableDefinition<'_> for BigEndianNonZeroU32Parser {
 
     #[inline]
     fn error(&self) -> Self::Error {
-        ExpectedNumberParseError(NumericExpectation::BigEndianNonZeroU32)
+        ExpectedNumberParseError(NumericExpectation::Integer {
+            signed: false,
+            non_zero: true,
+            endianness: Endianness::Big,
+        })
     }
 }
 
@@ -59,6 +67,10 @@ impl ParsableDefinition<'_> for OptionalBigEndianNonZeroU32Parser {
 
     #[inline]
     fn error(&self) -> Self::Error {
-        ExpectedNumberParseError(NumericExpectation::BigEndianU32)
+        ExpectedNumberParseError(NumericExpectation::Integer {
+            signed: false,
+            non_zero: false,
+            endianness: Endianness::Big,
+        })
     }
 }

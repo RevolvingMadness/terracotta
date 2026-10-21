@@ -14,15 +14,18 @@ impl<E: From<ExpectedNumberParseError>> Parsable<'_, [u8], E> for NonZeroU8Parse
     fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
         let start = parser.position;
 
-        let value = U8Parser.parse(parser)?;
+        let value = OptionalNonZeroU8Parser.parse(parser)?;
 
-        let Some(value) = NonZeroU8::new(value) else {
+        let Some(value) = value else {
             let end = parser.position;
 
             return parser
                 .add_error_with_span(
                     start.span(end),
-                    ExpectedNumberParseError(NumericExpectation::NonZeroU8),
+                    ExpectedNumberParseError(NumericExpectation::Byte {
+                        signed: false,
+                        non_zero: true,
+                    }),
                 )
                 .into_parse_result();
         };
@@ -38,7 +41,10 @@ impl ParsableDefinition<'_> for NonZeroU8Parser {
 
     #[inline]
     fn error(&self) -> Self::Error {
-        ExpectedNumberParseError(NumericExpectation::NonZeroU8)
+        ExpectedNumberParseError(NumericExpectation::Byte {
+            signed: false,
+            non_zero: true,
+        })
     }
 }
 
@@ -58,6 +64,9 @@ impl ParsableDefinition<'_> for OptionalNonZeroU8Parser {
     type Error = ExpectedNumberParseError;
 
     fn error(&self) -> Self::Error {
-        ExpectedNumberParseError(NumericExpectation::U8)
+        ExpectedNumberParseError(NumericExpectation::Byte {
+            signed: false,
+            non_zero: false,
+        })
     }
 }

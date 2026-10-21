@@ -7,95 +7,168 @@ use crate::parsers::{
     token::{any::ExpectedAnyTokenParseError, exact::ExpectedExactTokenParseError},
 };
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Endianness {
+    Little,
+    Big,
+}
+
 pub struct ExpectedEndOfInputParseError;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum NumericExpectation {
-    I8,
-    U8,
-    NonZeroI8,
-    NonZeroU8,
-
-    BigEndianI16,
-    LittleEndianI16,
-    BigEndianU16,
-    LittleEndianU16,
-    BigEndianNonZeroI16,
-    BigEndianNonZeroU16,
-    LittleEndianNonZeroI16,
-    LittleEndianNonZeroU16,
-
-    BigEndianI32,
-    LittleEndianI32,
-    BigEndianU32,
-    LittleEndianU32,
-    BigEndianNonZeroI32,
-    BigEndianNonZeroU32,
-    LittleEndianNonZeroI32,
-    LittleEndianNonZeroU32,
-
-    BigEndianI64,
-    LittleEndianI64,
-    BigEndianU64,
-    LittleEndianU64,
-    BigEndianNonZeroI64,
-    BigEndianNonZeroU64,
-    LittleEndianNonZeroI64,
-    LittleEndianNonZeroU64,
-
-    BigEndianF32,
-    LittleEndianF32,
-    BigEndianNonZeroFloat,
-    LittleEndianNonZeroFloat,
-
-    BigEndianF64,
-    LittleEndianF64,
-    BigEndianNonZeroDouble,
-    LittleEndianNonZeroDouble,
+    Byte {
+        signed: bool,
+        non_zero: bool,
+    },
+    Short {
+        signed: bool,
+        non_zero: bool,
+        endianness: Endianness,
+    },
+    Integer {
+        signed: bool,
+        non_zero: bool,
+        endianness: Endianness,
+    },
+    Long {
+        signed: bool,
+        non_zero: bool,
+        endianness: Endianness,
+    },
+    Float {
+        endianness: Endianness,
+    },
+    Double {
+        endianness: Endianness,
+    },
 }
 
 impl Display for NumericExpectation {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        let string = match self {
-            Self::I8 => "signed 8-bit integer",
-            Self::U8 => "unsigned 8-bit integer",
-            Self::NonZeroI8 => "non-zero signed 8-bit integer",
-            Self::NonZeroU8 => "non-zero unsigned 8-bit integer",
-            Self::BigEndianI16 => "big-endian signed 16-bit integer",
-            Self::LittleEndianI16 => "little-endian signed 16-bit integer",
-            Self::BigEndianU16 => "big-endian unsigned 16-bit integer",
-            Self::LittleEndianU16 => "little-endian unsigned 16-bit integer",
-            Self::BigEndianNonZeroI16 => "big-endian non-zero signed 16-bit integer",
-            Self::BigEndianNonZeroU16 => "big-endian non-zero unsigned 16-bit integer",
-            Self::LittleEndianNonZeroI16 => "little-endian non-zero signed 16-bit integer",
-            Self::LittleEndianNonZeroU16 => "little-endian non-zero unsigned 16-bit integer",
-            Self::BigEndianI32 => "big-endian signed 32-bit integer",
-            Self::LittleEndianI32 => "little-endian signed 32-bit integer",
-            Self::BigEndianU32 => "big-endian unsigned 32-bit integer",
-            Self::LittleEndianU32 => "little-endian unsigned 32-bit integer",
-            Self::BigEndianNonZeroI32 => "big-endian non-zero signed 32-bit integer",
-            Self::BigEndianNonZeroU32 => "big-endian non-zero unsigned 32-bit integer",
-            Self::LittleEndianNonZeroI32 => "little-endian non-zero signed 32-bit integer",
-            Self::LittleEndianNonZeroU32 => "little-endian non-zero unsigned 32-bit integer",
-            Self::BigEndianI64 => "big-endian signed 64-bit integer",
-            Self::LittleEndianI64 => "little-endian signed 64-bit integer",
-            Self::BigEndianU64 => "big-endian unsigned 64-bit integer",
-            Self::LittleEndianU64 => "little-endian unsigned 64-bit integer",
-            Self::BigEndianNonZeroI64 => "big-endian non-zero signed 64-bit integer",
-            Self::BigEndianNonZeroU64 => "big-endian non-zero unsigned 64-bit integer",
-            Self::LittleEndianNonZeroI64 => "little-endian non-zero signed 64-bit integer",
-            Self::LittleEndianNonZeroU64 => "little-endian non-zero unsigned 64-bit integer",
-            Self::BigEndianF32 => "big-endian float",
-            Self::LittleEndianF32 => "little-endian float",
-            Self::BigEndianNonZeroFloat => "big-endian non-zero float",
-            Self::LittleEndianNonZeroFloat => "little-endian non-zero float",
-            Self::BigEndianF64 => "big-endian double",
-            Self::LittleEndianF64 => "little-endian double",
-            Self::BigEndianNonZeroDouble => "big-endian non-zero double",
-            Self::LittleEndianNonZeroDouble => "little-endian non-zero double",
-        };
+        match *self {
+            Self::Byte { signed, non_zero } => {
+                if non_zero {
+                    write!(f, "non-zero ")?;
+                }
 
-        f.write_str(string)
+                if signed {
+                    write!(f, "signed ")?;
+                } else {
+                    write!(f, "unsigned ")?;
+                }
+
+                write!(f, "8-bit integer")
+            }
+            Self::Short {
+                signed,
+                non_zero,
+                endianness,
+            } => {
+                match endianness {
+                    Endianness::Little => {
+                        write!(f, "little")?;
+                    }
+                    Endianness::Big => {
+                        write!(f, "big")?;
+                    }
+                }
+
+                write!(f, "-endian ")?;
+
+                if non_zero {
+                    write!(f, "non-zero ")?;
+                }
+
+                if signed {
+                    write!(f, "signed ")?;
+                } else {
+                    write!(f, "unsigned ")?;
+                }
+
+                write!(f, "8-bit integer")
+            }
+            Self::Integer {
+                signed,
+                non_zero,
+                endianness,
+            } => {
+                match endianness {
+                    Endianness::Little => {
+                        write!(f, "little")?;
+                    }
+                    Endianness::Big => {
+                        write!(f, "big")?;
+                    }
+                }
+
+                write!(f, "-endian ")?;
+
+                if non_zero {
+                    write!(f, "non-zero ")?;
+                }
+
+                if signed {
+                    write!(f, "signed ")?;
+                } else {
+                    write!(f, "unsigned ")?;
+                }
+
+                write!(f, "8-bit integer")
+            }
+            Self::Long {
+                signed,
+                non_zero,
+                endianness,
+            } => {
+                match endianness {
+                    Endianness::Little => {
+                        write!(f, "little")?;
+                    }
+                    Endianness::Big => {
+                        write!(f, "big")?;
+                    }
+                }
+
+                write!(f, "-endian ")?;
+
+                if non_zero {
+                    write!(f, "non-zero ")?;
+                }
+
+                if signed {
+                    write!(f, "signed ")?;
+                } else {
+                    write!(f, "unsigned ")?;
+                }
+
+                write!(f, "8-bit integer")
+            }
+            Self::Float { endianness } => {
+                match endianness {
+                    Endianness::Little => {
+                        write!(f, "little")?;
+                    }
+                    Endianness::Big => {
+                        write!(f, "big")?;
+                    }
+                }
+
+                write!(f, "-endian float")
+            }
+            Self::Double { endianness } => {
+                match endianness {
+                    Endianness::Little => {
+                        write!(f, "little")?;
+                    }
+                    Endianness::Big => {
+                        write!(f, "big")?;
+                    }
+                }
+
+                write!(f, "-endian float")
+            }
+        }
     }
 }
 
