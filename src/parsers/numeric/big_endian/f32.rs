@@ -1,6 +1,7 @@
 use crate::{
     endianness::Endianness,
     errors::number::ExpectedNumberParseError,
+    input::Input,
     numeric_expectation::NumericExpectation,
     parser::Parser,
     results::ParseResult,
@@ -10,7 +11,7 @@ use crate::{
 pub struct BigEndianF32Parser;
 
 impl ParsableDefinition for BigEndianF32Parser {
-    type Output<'input> = f32;
+    type Output<'input, I: Input + ?Sized + 'input> = f32;
 
     type Error = ExpectedNumberParseError;
 
@@ -23,7 +24,7 @@ impl ParsableDefinition for BigEndianF32Parser {
 }
 
 impl<'input, E> Parsable<'input, [u8], E> for BigEndianF32Parser {
-    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output<'input>> {
+    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output<'input, [u8]>> {
         let bytes = parser.advance_len_exact(4)?;
 
         let bytes = <[u8; 4] as TryFrom<&[u8]>>::try_from(bytes).unwrap();

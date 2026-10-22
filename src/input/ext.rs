@@ -66,7 +66,7 @@ pub trait InputExt<'input>: Input {
         &'input self,
         parsable: &P,
         context: &mut Context,
-    ) -> Result<P::Output<'input>, Vec<Spanned<E>>> {
+    ) -> Result<P::Output<'input, Self>, Vec<Spanned<E>>> {
         parse_fully(self, |parser| parsable.expect_with_context(parser, context))
     }
 
@@ -79,7 +79,7 @@ pub trait InputExt<'input>: Input {
         &'input self,
         parsable: &P,
         context: &mut Context,
-    ) -> Result<P::Output<'input>, Vec<Spanned<E>>> {
+    ) -> Result<P::Output<'input, Self>, Vec<Spanned<E>>> {
         parse_fully_allow_trailing(self, |parser| parsable.expect_with_context(parser, context))
     }
 
@@ -92,7 +92,7 @@ pub trait InputExt<'input>: Input {
         &'input self,
         parsable: &P,
         context: &mut Context,
-    ) -> Result<Option<P::Output<'input>>, Vec<Spanned<E>>> {
+    ) -> Result<Option<P::Output<'input, Self>>, Vec<Spanned<E>>> {
         parse_fully(self, |parser| {
             parsable.try_parse_with_context(parser, context)
         })
@@ -107,7 +107,7 @@ pub trait InputExt<'input>: Input {
         &'input self,
         parsable: &P,
         context: &mut Context,
-    ) -> Result<Option<P::Output<'input>>, Vec<Spanned<E>>> {
+    ) -> Result<Option<P::Output<'input, Self>>, Vec<Spanned<E>>> {
         parse_fully_allow_trailing(self, |parser| {
             parsable.try_parse_with_context(parser, context)
         })
@@ -120,7 +120,7 @@ pub trait InputExt<'input>: Input {
     >(
         &'input self,
         parsable: &P,
-    ) -> Result<P::Output<'input>, Vec<Spanned<E>>> {
+    ) -> Result<P::Output<'input, Self>, Vec<Spanned<E>>> {
         parse_fully(self, |parser| parsable.expect(parser))
     }
 
@@ -131,7 +131,7 @@ pub trait InputExt<'input>: Input {
     >(
         &'input self,
         parsable: &P,
-    ) -> Result<P::Output<'input>, Vec<Spanned<E>>> {
+    ) -> Result<P::Output<'input, Self>, Vec<Spanned<E>>> {
         parse_fully_allow_trailing(self, |parser| parsable.expect(parser))
     }
 
@@ -142,7 +142,7 @@ pub trait InputExt<'input>: Input {
     >(
         &'input self,
         parsable: &P,
-    ) -> Result<Option<P::Output<'input>>, Vec<Spanned<E>>> {
+    ) -> Result<Option<P::Output<'input, Self>>, Vec<Spanned<E>>> {
         parse_fully(self, |parser| parsable.try_parse(parser))
     }
 
@@ -153,7 +153,7 @@ pub trait InputExt<'input>: Input {
     >(
         &'input self,
         parsable: &P,
-    ) -> Result<Option<P::Output<'input>>, Vec<Spanned<E>>> {
+    ) -> Result<Option<P::Output<'input, Self>>, Vec<Spanned<E>>> {
         parse_fully_allow_trailing(self, |parser| parsable.try_parse(parser))
     }
 }

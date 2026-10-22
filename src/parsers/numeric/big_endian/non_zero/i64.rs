@@ -3,6 +3,7 @@ use core::num::NonZeroI64;
 use crate::{
     endianness::Endianness,
     errors::number::ExpectedNumberParseError,
+    input::Input,
     numeric_expectation::NumericExpectation,
     parser::Parser,
     parsers::numeric::big_endian::i64::BigEndianI64Parser,
@@ -15,7 +16,7 @@ pub struct BigEndianNonZeroI64Parser;
 impl<'input, E: From<ExpectedNumberParseError>> Parsable<'input, [u8], E>
     for BigEndianNonZeroI64Parser
 {
-    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output<'input>> {
+    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output<'input, [u8]>> {
         let start = parser.position;
 
         let value = OptionalBigEndianNonZeroI64Parser.parse(parser)?;
@@ -40,7 +41,7 @@ impl<'input, E: From<ExpectedNumberParseError>> Parsable<'input, [u8], E>
 }
 
 impl ParsableDefinition for BigEndianNonZeroI64Parser {
-    type Output<'input> = NonZeroI64;
+    type Output<'input, I: Input + ?Sized + 'input> = NonZeroI64;
 
     type Error = ExpectedNumberParseError;
 
@@ -57,7 +58,7 @@ impl ParsableDefinition for BigEndianNonZeroI64Parser {
 pub struct OptionalBigEndianNonZeroI64Parser;
 
 impl ParsableDefinition for OptionalBigEndianNonZeroI64Parser {
-    type Output<'input> = Option<NonZeroI64>;
+    type Output<'input, I: Input + ?Sized + 'input> = Option<NonZeroI64>;
 
     type Error = ExpectedNumberParseError;
 
@@ -72,7 +73,7 @@ impl ParsableDefinition for OptionalBigEndianNonZeroI64Parser {
 }
 
 impl<'input, E> Parsable<'input, [u8], E> for OptionalBigEndianNonZeroI64Parser {
-    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output<'input>> {
+    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output<'input, [u8]>> {
         let value = BigEndianI64Parser.parse(parser)?;
 
         Ok(NonZeroI64::new(value))

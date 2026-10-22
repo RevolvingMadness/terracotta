@@ -17,7 +17,7 @@ impl<P> ParsableDefinition for ParsableWithAnyContext<P>
 where
     P: ParsableDefinition,
 {
-    type Output<'input> = P::Output<'input>;
+    type Output<'input, I: Input + ?Sized + 'input> = P::Output<'input, I>;
 
     type Error = P::Error;
 
@@ -33,7 +33,7 @@ where
     P: Parsable<'input, I, E>,
 {
     #[inline]
-    fn parse(&self, parser: &mut Parser<'input, I, E>) -> ParseResult<Self::Output<'input>> {
+    fn parse(&self, parser: &mut Parser<'input, I, E>) -> ParseResult<Self::Output<'input, I>> {
         self.parsable.parse(parser)
     }
 }
@@ -49,7 +49,7 @@ where
         &self,
         parser: &mut Parser<'input, I, E>,
         _: &mut Context,
-    ) -> ParseResult<Self::Output<'input>> {
+    ) -> ParseResult<Self::Output<'input, I>> {
         self.parsable.parse(parser)
     }
 }
@@ -62,13 +62,16 @@ impl<P> ParsableWithAnyContext<P> {
     }
 }
 
-pub trait ParsableWithAnyContextParsableExt<'input, I, E, P>
+pub trait ParsableWithAnyContextParsableExt<'input, I, E, P>:
+    Parsable<'input, I, E> + Sized
 where
     I: Input + ?Sized + 'input,
-    P: Parsable<'input, I, E>,
 {
+    #[inline]
     #[must_use]
-    fn parsable_with_any_context(self) -> ParsableWithAnyContext<P>;
+    fn parsable_with_any_context(self) -> ParsableWithAnyContext<Self> {
+        ParsableWithAnyContext::new(self)
+    }
 }
 
 impl<'input, I, E, P> ParsableWithAnyContextParsableExt<'input, I, E, P> for P
@@ -76,8 +79,4 @@ where
     I: Input + ?Sized + 'input,
     P: Parsable<'input, I, E>,
 {
-    #[inline]
-    fn parsable_with_any_context(self) -> ParsableWithAnyContext<P> {
-        ParsableWithAnyContext::new(self)
-    }
 }

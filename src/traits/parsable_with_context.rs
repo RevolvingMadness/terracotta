@@ -13,13 +13,13 @@ where
         &self,
         parser: &mut Parser<'input, I, E>,
         context: &mut C,
-    ) -> ParseResult<Self::Output<'input>>;
+    ) -> ParseResult<Self::Output<'input, I>>;
 
     fn try_parse_with_context(
         &self,
         parser: &mut Parser<'input, I, E>,
         context: &mut C,
-    ) -> OptionParseResult<Self::Output<'input>> {
+    ) -> OptionParseResult<Self::Output<'input, I>> {
         self.parse_with_context(parser, context)
             .into_option_parse_result()
     }
@@ -29,7 +29,7 @@ where
         parser: &mut Parser<'input, I, E>,
         context: &mut C,
         error_fn: impl FnOnce() -> Self::Error,
-    ) -> HardParseResult<Self::Output<'input>>
+    ) -> HardParseResult<Self::Output<'input, I>>
     where
         E: From<Self::Error>,
     {
@@ -42,7 +42,7 @@ where
         parser: &mut Parser<'input, I, E>,
         context: &mut C,
         error: Self::Error,
-    ) -> HardParseResult<Self::Output<'input>>
+    ) -> HardParseResult<Self::Output<'input, I>>
     where
         E: From<Self::Error>,
     {
@@ -54,7 +54,7 @@ where
         &self,
         parser: &mut Parser<'input, I, E>,
         context: &mut C,
-    ) -> HardParseResult<Self::Output<'input>>
+    ) -> HardParseResult<Self::Output<'input, I>>
     where
         E: From<Self::Error>,
     {

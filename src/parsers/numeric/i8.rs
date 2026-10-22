@@ -1,5 +1,6 @@
 use crate::{
     errors::number::ExpectedNumberParseError,
+    input::Input,
     numeric_expectation::NumericExpectation,
     parser::Parser,
     results::{ParseResult, option::OptionTExt},
@@ -9,7 +10,7 @@ use crate::{
 pub struct I8Parser;
 
 impl ParsableDefinition for I8Parser {
-    type Output<'input> = i8;
+    type Output<'input, I: Input + ?Sized + 'input> = i8;
 
     type Error = ExpectedNumberParseError;
 
@@ -23,7 +24,7 @@ impl ParsableDefinition for I8Parser {
 }
 
 impl<'input, E> Parsable<'input, [u8], E> for I8Parser {
-    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output<'input>> {
+    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output<'input, [u8]>> {
         let value = parser.advance().into_parse_result()?;
 
         Ok(value as i8)
