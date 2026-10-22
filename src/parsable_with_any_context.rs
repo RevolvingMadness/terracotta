@@ -13,11 +13,11 @@ pub struct ParsableWithAnyContext<P> {
     parsable: P,
 }
 
-impl<'input, P> ParsableDefinition<'input> for ParsableWithAnyContext<P>
+impl<P> ParsableDefinition for ParsableWithAnyContext<P>
 where
-    P: ParsableDefinition<'input>,
+    P: ParsableDefinition,
 {
-    type Output = P::Output;
+    type Output<'input> = P::Output<'input>;
 
     type Error = P::Error;
 
@@ -33,7 +33,7 @@ where
     P: Parsable<'input, I, E>,
 {
     #[inline]
-    fn parse(&self, parser: &mut Parser<'input, I, E>) -> ParseResult<Self::Output> {
+    fn parse(&self, parser: &mut Parser<'input, I, E>) -> ParseResult<Self::Output<'input>> {
         self.parsable.parse(parser)
     }
 }
@@ -49,7 +49,7 @@ where
         &self,
         parser: &mut Parser<'input, I, E>,
         _: &mut Context,
-    ) -> ParseResult<Self::Output> {
+    ) -> ParseResult<Self::Output<'input>> {
         self.parsable.parse(parser)
     }
 }

@@ -12,8 +12,8 @@ use crate::{
 
 pub struct LittleEndianNonZeroU16Parser;
 
-impl ParsableDefinition<'_> for LittleEndianNonZeroU16Parser {
-    type Output = NonZeroU16;
+impl ParsableDefinition for LittleEndianNonZeroU16Parser {
+    type Output<'input> = NonZeroU16;
 
     type Error = ExpectedNumberParseError;
 
@@ -27,8 +27,10 @@ impl ParsableDefinition<'_> for LittleEndianNonZeroU16Parser {
     }
 }
 
-impl<E: From<ExpectedNumberParseError>> Parsable<'_, [u8], E> for LittleEndianNonZeroU16Parser {
-    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
+impl<'input, E: From<ExpectedNumberParseError>> Parsable<'input, [u8], E>
+    for LittleEndianNonZeroU16Parser
+{
+    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output<'input>> {
         let start = parser.position;
 
         let value = OptionalLittleEndianNonZeroU16Parser.parse(parser)?;
@@ -54,8 +56,8 @@ impl<E: From<ExpectedNumberParseError>> Parsable<'_, [u8], E> for LittleEndianNo
 
 pub struct OptionalLittleEndianNonZeroU16Parser;
 
-impl ParsableDefinition<'_> for OptionalLittleEndianNonZeroU16Parser {
-    type Output = Option<NonZeroU16>;
+impl ParsableDefinition for OptionalLittleEndianNonZeroU16Parser {
+    type Output<'input> = Option<NonZeroU16>;
 
     type Error = ExpectedNumberParseError;
 
@@ -69,8 +71,8 @@ impl ParsableDefinition<'_> for OptionalLittleEndianNonZeroU16Parser {
     }
 }
 
-impl<E> Parsable<'_, [u8], E> for OptionalLittleEndianNonZeroU16Parser {
-    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
+impl<'input, E> Parsable<'input, [u8], E> for OptionalLittleEndianNonZeroU16Parser {
+    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output<'input>> {
         let value = LittleEndianU16Parser.parse(parser)?;
 
         Ok(NonZeroU16::new(value))

@@ -10,8 +10,8 @@ use crate::{
 #[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
 pub struct ExpectedStringParseError(pub String);
 
-impl<'input> ParsableDefinition<'input> for str {
-    type Output = &'input Self;
+impl ParsableDefinition for str {
+    type Output<'input> = &'input Self;
 
     type Error = ExpectedStringParseError;
 
@@ -21,7 +21,7 @@ impl<'input> ParsableDefinition<'input> for str {
 }
 
 impl<'input, E> Parsable<'input, Self, E> for str {
-    fn parse(&self, parser: &mut Parser<'input, Self, E>) -> ParseResult<Self::Output> {
+    fn parse(&self, parser: &mut Parser<'input, Self, E>) -> ParseResult<Self::Output<'input>> {
         if !parser.slice_starts_with(parser.position, self) {
             return Err(ParseFailure::Soft);
         }

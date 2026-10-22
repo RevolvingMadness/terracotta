@@ -60,39 +60,39 @@ pub trait InputExt<'input>: Input {
     #[inline]
     fn parse_fully_with_context<
         E: From<ExpectedEndOfInputParseError>,
-        P: ParsableDefinition<'input, Error = E> + ParsableWithContext<'input, Self, E, Context>,
+        P: ParsableDefinition<Error = E> + ParsableWithContext<'input, Self, E, Context>,
         Context,
     >(
         &'input self,
         parsable: &P,
         context: &mut Context,
-    ) -> Result<P::Output, Vec<Spanned<E>>> {
+    ) -> Result<P::Output<'input>, Vec<Spanned<E>>> {
         parse_fully(self, |parser| parsable.expect_with_context(parser, context))
     }
 
     #[inline]
     fn parse_fully_with_context_allow_trailing<
         E,
-        P: ParsableDefinition<'input, Error = E> + ParsableWithContext<'input, Self, E, Context>,
+        P: ParsableDefinition<Error = E> + ParsableWithContext<'input, Self, E, Context>,
         Context,
     >(
         &'input self,
         parsable: &P,
         context: &mut Context,
-    ) -> Result<P::Output, Vec<Spanned<E>>> {
+    ) -> Result<P::Output<'input>, Vec<Spanned<E>>> {
         parse_fully_allow_trailing(self, |parser| parsable.expect_with_context(parser, context))
     }
 
     #[inline]
     fn try_parse_fully_with_context<
         E: From<ExpectedEndOfInputParseError>,
-        P: ParsableDefinition<'input, Error = E> + ParsableWithContext<'input, Self, E, Context>,
+        P: ParsableDefinition<Error = E> + ParsableWithContext<'input, Self, E, Context>,
         Context,
     >(
         &'input self,
         parsable: &P,
         context: &mut Context,
-    ) -> Result<Option<P::Output>, Vec<Spanned<E>>> {
+    ) -> Result<Option<P::Output<'input>>, Vec<Spanned<E>>> {
         parse_fully(self, |parser| {
             parsable.try_parse_with_context(parser, context)
         })
@@ -101,13 +101,13 @@ pub trait InputExt<'input>: Input {
     #[inline]
     fn try_parse_fully_with_context_allow_trailing<
         E,
-        P: ParsableDefinition<'input, Error = E> + ParsableWithContext<'input, Self, E, Context>,
+        P: ParsableDefinition<Error = E> + ParsableWithContext<'input, Self, E, Context>,
         Context,
     >(
         &'input self,
         parsable: &P,
         context: &mut Context,
-    ) -> Result<Option<P::Output>, Vec<Spanned<E>>> {
+    ) -> Result<Option<P::Output<'input>>, Vec<Spanned<E>>> {
         parse_fully_allow_trailing(self, |parser| {
             parsable.try_parse_with_context(parser, context)
         })
@@ -116,44 +116,44 @@ pub trait InputExt<'input>: Input {
     #[inline]
     fn parse_fully<
         E: From<ExpectedEndOfInputParseError>,
-        P: ParsableDefinition<'input, Error = E> + Parsable<'input, Self, E>,
+        P: ParsableDefinition<Error = E> + Parsable<'input, Self, E>,
     >(
         &'input self,
         parsable: &P,
-    ) -> Result<P::Output, Vec<Spanned<E>>> {
+    ) -> Result<P::Output<'input>, Vec<Spanned<E>>> {
         parse_fully(self, |parser| parsable.expect(parser))
     }
 
     #[inline]
     fn parse_fully_allow_trailing<
         E,
-        P: ParsableDefinition<'input, Error = E> + Parsable<'input, Self, E>,
+        P: ParsableDefinition<Error = E> + Parsable<'input, Self, E>,
     >(
         &'input self,
         parsable: &P,
-    ) -> Result<P::Output, Vec<Spanned<E>>> {
+    ) -> Result<P::Output<'input>, Vec<Spanned<E>>> {
         parse_fully_allow_trailing(self, |parser| parsable.expect(parser))
     }
 
     #[inline]
     fn try_parse_fully<
         E: From<ExpectedEndOfInputParseError>,
-        P: ParsableDefinition<'input, Error = E> + Parsable<'input, Self, E>,
+        P: ParsableDefinition<Error = E> + Parsable<'input, Self, E>,
     >(
         &'input self,
         parsable: &P,
-    ) -> Result<Option<P::Output>, Vec<Spanned<E>>> {
+    ) -> Result<Option<P::Output<'input>>, Vec<Spanned<E>>> {
         parse_fully(self, |parser| parsable.try_parse(parser))
     }
 
     #[inline]
     fn try_parse_fully_allow_trailing<
         E,
-        P: ParsableDefinition<'input, Error = E> + Parsable<'input, Self, E>,
+        P: ParsableDefinition<Error = E> + Parsable<'input, Self, E>,
     >(
         &'input self,
         parsable: &P,
-    ) -> Result<Option<P::Output>, Vec<Spanned<E>>> {
+    ) -> Result<Option<P::Output<'input>>, Vec<Spanned<E>>> {
         parse_fully_allow_trailing(self, |parser| parsable.try_parse(parser))
     }
 }

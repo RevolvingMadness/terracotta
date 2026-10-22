@@ -9,8 +9,8 @@ use crate::{
 
 pub struct BigEndianU64Parser;
 
-impl ParsableDefinition<'_> for BigEndianU64Parser {
-    type Output = u64;
+impl ParsableDefinition for BigEndianU64Parser {
+    type Output<'input> = u64;
 
     type Error = ExpectedNumberParseError;
 
@@ -24,8 +24,8 @@ impl ParsableDefinition<'_> for BigEndianU64Parser {
     }
 }
 
-impl<E> Parsable<'_, [u8], E> for BigEndianU64Parser {
-    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
+impl<'input, E> Parsable<'input, [u8], E> for BigEndianU64Parser {
+    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output<'input>> {
         let bytes = parser.advance_len_exact(8)?;
 
         let bytes = <[u8; 8] as TryFrom<&[u8]>>::try_from(bytes).unwrap();

@@ -9,8 +9,8 @@ use crate::{
 
 pub struct LittleEndianF64Parser;
 
-impl ParsableDefinition<'_> for LittleEndianF64Parser {
-    type Output = f64;
+impl ParsableDefinition for LittleEndianF64Parser {
+    type Output<'input> = f64;
 
     type Error = ExpectedNumberParseError;
 
@@ -22,8 +22,8 @@ impl ParsableDefinition<'_> for LittleEndianF64Parser {
     }
 }
 
-impl<E> Parsable<'_, [u8], E> for LittleEndianF64Parser {
-    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
+impl<'input, E> Parsable<'input, [u8], E> for LittleEndianF64Parser {
+    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output<'input>> {
         let bytes = parser.advance_len_exact(8)?;
 
         let bytes = <[u8; 8] as TryFrom<&[u8]>>::try_from(bytes).unwrap();

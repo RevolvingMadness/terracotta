@@ -8,8 +8,8 @@ use crate::{
 
 pub struct I8Parser;
 
-impl ParsableDefinition<'_> for I8Parser {
-    type Output = i8;
+impl ParsableDefinition for I8Parser {
+    type Output<'input> = i8;
 
     type Error = ExpectedNumberParseError;
 
@@ -22,8 +22,8 @@ impl ParsableDefinition<'_> for I8Parser {
     }
 }
 
-impl<E> Parsable<'_, [u8], E> for I8Parser {
-    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
+impl<'input, E> Parsable<'input, [u8], E> for I8Parser {
+    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output<'input>> {
         let value = parser.advance().into_parse_result()?;
 
         Ok(value as i8)

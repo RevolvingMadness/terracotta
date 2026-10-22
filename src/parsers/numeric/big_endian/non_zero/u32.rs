@@ -12,8 +12,10 @@ use crate::{
 
 pub struct BigEndianNonZeroU32Parser;
 
-impl<E: From<ExpectedNumberParseError>> Parsable<'_, [u8], E> for BigEndianNonZeroU32Parser {
-    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
+impl<'input, E: From<ExpectedNumberParseError>> Parsable<'input, [u8], E>
+    for BigEndianNonZeroU32Parser
+{
+    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output<'input>> {
         let start = parser.position;
 
         let value = OptionalBigEndianNonZeroU32Parser.parse(parser)?;
@@ -37,8 +39,8 @@ impl<E: From<ExpectedNumberParseError>> Parsable<'_, [u8], E> for BigEndianNonZe
     }
 }
 
-impl ParsableDefinition<'_> for BigEndianNonZeroU32Parser {
-    type Output = NonZeroU32;
+impl ParsableDefinition for BigEndianNonZeroU32Parser {
+    type Output<'input> = NonZeroU32;
 
     type Error = ExpectedNumberParseError;
 
@@ -54,16 +56,16 @@ impl ParsableDefinition<'_> for BigEndianNonZeroU32Parser {
 
 pub struct OptionalBigEndianNonZeroU32Parser;
 
-impl<E> Parsable<'_, [u8], E> for OptionalBigEndianNonZeroU32Parser {
-    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
+impl<'input, E> Parsable<'input, [u8], E> for OptionalBigEndianNonZeroU32Parser {
+    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output<'input>> {
         let value = BigEndianU32Parser.parse(parser)?;
 
         Ok(NonZeroU32::new(value))
     }
 }
 
-impl ParsableDefinition<'_> for OptionalBigEndianNonZeroU32Parser {
-    type Output = Option<NonZeroU32>;
+impl ParsableDefinition for OptionalBigEndianNonZeroU32Parser {
+    type Output<'input> = Option<NonZeroU32>;
 
     type Error = ExpectedNumberParseError;
 

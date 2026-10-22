@@ -5,7 +5,7 @@ use crate::{
     traits::parsable_definition::ParsableDefinition,
 };
 
-pub trait ParsableWithContext<'input, I, E, C>: ParsableDefinition<'input>
+pub trait ParsableWithContext<'input, I, E, C>: ParsableDefinition
 where
     I: Input + ?Sized + 'input,
 {
@@ -13,13 +13,13 @@ where
         &self,
         parser: &mut Parser<'input, I, E>,
         context: &mut C,
-    ) -> ParseResult<Self::Output>;
+    ) -> ParseResult<Self::Output<'input>>;
 
     fn try_parse_with_context(
         &self,
         parser: &mut Parser<'input, I, E>,
         context: &mut C,
-    ) -> OptionParseResult<Self::Output> {
+    ) -> OptionParseResult<Self::Output<'input>> {
         self.parse_with_context(parser, context)
             .into_option_parse_result()
     }
@@ -29,7 +29,7 @@ where
         parser: &mut Parser<'input, I, E>,
         context: &mut C,
         error_fn: impl FnOnce() -> Self::Error,
-    ) -> HardParseResult<Self::Output>
+    ) -> HardParseResult<Self::Output<'input>>
     where
         E: From<Self::Error>,
     {
@@ -42,7 +42,7 @@ where
         parser: &mut Parser<'input, I, E>,
         context: &mut C,
         error: Self::Error,
-    ) -> HardParseResult<Self::Output>
+    ) -> HardParseResult<Self::Output<'input>>
     where
         E: From<Self::Error>,
     {
@@ -54,7 +54,7 @@ where
         &self,
         parser: &mut Parser<'input, I, E>,
         context: &mut C,
-    ) -> HardParseResult<Self::Output>
+    ) -> HardParseResult<Self::Output<'input>>
     where
         E: From<Self::Error>,
     {

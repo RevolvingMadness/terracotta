@@ -24,8 +24,8 @@ impl<T> AnyTokenParser<T> {
 
 pub struct ExpectedAnyTokenParseError;
 
-impl<T> ParsableDefinition<'_> for AnyTokenParser<T> {
-    type Output = T;
+impl<T> ParsableDefinition for AnyTokenParser<T> {
+    type Output<'input> = T;
 
     type Error = ExpectedAnyTokenParseError;
 
@@ -38,7 +38,7 @@ impl<'input, I, E> Parsable<'input, I, E> for AnyTokenParser<I::Token>
 where
     I: Input + ?Sized + 'input,
 {
-    fn parse(&self, parser: &mut Parser<I, E>) -> ParseResult<Self::Output> {
+    fn parse(&self, parser: &mut Parser<I, E>) -> ParseResult<Self::Output<'input>> {
         parser.advance().into_parse_result()
     }
 }

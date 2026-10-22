@@ -12,8 +12,8 @@ use crate::{
 
 pub struct BigEndianNonZeroU16Parser;
 
-impl ParsableDefinition<'_> for BigEndianNonZeroU16Parser {
-    type Output = NonZeroU16;
+impl ParsableDefinition for BigEndianNonZeroU16Parser {
+    type Output<'input> = NonZeroU16;
 
     type Error = ExpectedNumberParseError;
 
@@ -27,8 +27,10 @@ impl ParsableDefinition<'_> for BigEndianNonZeroU16Parser {
     }
 }
 
-impl<E: From<ExpectedNumberParseError>> Parsable<'_, [u8], E> for BigEndianNonZeroU16Parser {
-    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
+impl<'input, E: From<ExpectedNumberParseError>> Parsable<'input, [u8], E>
+    for BigEndianNonZeroU16Parser
+{
+    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output<'input>> {
         let start = parser.position;
 
         let value = OptionalBigEndianNonZeroU16Parser.parse(parser)?;
@@ -54,8 +56,8 @@ impl<E: From<ExpectedNumberParseError>> Parsable<'_, [u8], E> for BigEndianNonZe
 
 pub struct OptionalBigEndianNonZeroU16Parser;
 
-impl ParsableDefinition<'_> for OptionalBigEndianNonZeroU16Parser {
-    type Output = Option<NonZeroU16>;
+impl ParsableDefinition for OptionalBigEndianNonZeroU16Parser {
+    type Output<'input> = Option<NonZeroU16>;
 
     type Error = ExpectedNumberParseError;
 
@@ -69,8 +71,8 @@ impl ParsableDefinition<'_> for OptionalBigEndianNonZeroU16Parser {
     }
 }
 
-impl<E> Parsable<'_, [u8], E> for OptionalBigEndianNonZeroU16Parser {
-    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
+impl<'input, E> Parsable<'input, [u8], E> for OptionalBigEndianNonZeroU16Parser {
+    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output<'input>> {
         let value = BigEndianU16Parser.parse(parser)?;
 
         Ok(NonZeroU16::new(value))

@@ -5,13 +5,16 @@ use crate::{
     traits::parsable_definition::ParsableDefinition,
 };
 
-pub trait Parsable<'input, I, E>: ParsableDefinition<'input>
+pub trait Parsable<'input, I, E>: ParsableDefinition
 where
     I: Input + ?Sized + 'input,
 {
-    fn parse(&self, parser: &mut Parser<'input, I, E>) -> ParseResult<Self::Output>;
+    fn parse(&self, parser: &mut Parser<'input, I, E>) -> ParseResult<Self::Output<'input>>;
 
-    fn try_parse(&self, parser: &mut Parser<'input, I, E>) -> OptionParseResult<Self::Output> {
+    fn try_parse(
+        &self,
+        parser: &mut Parser<'input, I, E>,
+    ) -> OptionParseResult<Self::Output<'input>> {
         self.parse(parser).into_option_parse_result()
     }
 
@@ -19,7 +22,7 @@ where
         &self,
         parser: &mut Parser<'input, I, E>,
         error_fn: impl FnOnce() -> E2,
-    ) -> HardParseResult<Self::Output> {
+    ) -> HardParseResult<Self::Output<'input>> {
         self.parse(parser)
             .into_hard_parse_result_with(parser, error_fn)
     }
@@ -29,12 +32,12 @@ where
         &self,
         parser: &mut Parser<'input, I, E>,
         error: E2,
-    ) -> HardParseResult<Self::Output> {
+    ) -> HardParseResult<Self::Output<'input>> {
         self.expect_renamed_with(parser, || error)
     }
 
     #[inline]
-    fn expect(&self, parser: &mut Parser<'input, I, E>) -> HardParseResult<Self::Output>
+    fn expect(&self, parser: &mut Parser<'input, I, E>) -> HardParseResult<Self::Output<'input>>
     where
         E: From<Self::Error>,
     {

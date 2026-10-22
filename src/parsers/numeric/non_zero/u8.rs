@@ -11,8 +11,8 @@ use crate::{
 
 pub struct NonZeroU8Parser;
 
-impl<E: From<ExpectedNumberParseError>> Parsable<'_, [u8], E> for NonZeroU8Parser {
-    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
+impl<'input, E: From<ExpectedNumberParseError>> Parsable<'input, [u8], E> for NonZeroU8Parser {
+    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output<'input>> {
         let start = parser.position;
 
         let value = OptionalNonZeroU8Parser.parse(parser)?;
@@ -35,8 +35,8 @@ impl<E: From<ExpectedNumberParseError>> Parsable<'_, [u8], E> for NonZeroU8Parse
     }
 }
 
-impl ParsableDefinition<'_> for NonZeroU8Parser {
-    type Output = NonZeroU8;
+impl ParsableDefinition for NonZeroU8Parser {
+    type Output<'input> = NonZeroU8;
 
     type Error = ExpectedNumberParseError;
 
@@ -51,16 +51,16 @@ impl ParsableDefinition<'_> for NonZeroU8Parser {
 
 pub struct OptionalNonZeroU8Parser;
 
-impl<E> Parsable<'_, [u8], E> for OptionalNonZeroU8Parser {
-    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
+impl<'input, E> Parsable<'input, [u8], E> for OptionalNonZeroU8Parser {
+    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output<'input>> {
         let value = U8Parser.parse(parser)?;
 
         Ok(NonZeroU8::new(value))
     }
 }
 
-impl ParsableDefinition<'_> for OptionalNonZeroU8Parser {
-    type Output = Option<NonZeroU8>;
+impl ParsableDefinition for OptionalNonZeroU8Parser {
+    type Output<'input> = Option<NonZeroU8>;
 
     type Error = ExpectedNumberParseError;
 

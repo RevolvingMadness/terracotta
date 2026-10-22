@@ -1,5 +1,5 @@
-pub trait ParsableDefinition<'input> {
-    type Output;
+pub trait ParsableDefinition {
+    type Output<'input>;
 
     type Error;
 

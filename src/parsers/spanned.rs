@@ -11,11 +11,11 @@ pub struct SpannedParser<P> {
     parsable: P,
 }
 
-impl<'input, P> ParsableDefinition<'input> for SpannedParser<P>
+impl<P> ParsableDefinition for SpannedParser<P>
 where
-    P: ParsableDefinition<'input>,
+    P: ParsableDefinition,
 {
-    type Output = Spanned<P::Output>;
+    type Output<'input> = Spanned<P::Output<'input>>;
 
     type Error = P::Error;
 
@@ -29,7 +29,7 @@ where
     I: Input + ?Sized + 'input,
     P: Parsable<'input, I, E>,
 {
-    fn parse(&self, parser: &mut Parser<'input, I, E>) -> ParseResult<Self::Output> {
+    fn parse(&self, parser: &mut Parser<'input, I, E>) -> ParseResult<Self::Output<'input>> {
         let start = parser.position;
 
         let value = self.parsable.parse(parser)?;

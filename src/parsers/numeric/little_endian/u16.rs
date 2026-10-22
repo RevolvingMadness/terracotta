@@ -9,8 +9,8 @@ use crate::{
 
 pub struct LittleEndianU16Parser;
 
-impl ParsableDefinition<'_> for LittleEndianU16Parser {
-    type Output = u16;
+impl ParsableDefinition for LittleEndianU16Parser {
+    type Output<'input> = u16;
 
     type Error = ExpectedNumberParseError;
 
@@ -23,8 +23,8 @@ impl ParsableDefinition<'_> for LittleEndianU16Parser {
     }
 }
 
-impl<E> Parsable<'_, [u8], E> for LittleEndianU16Parser {
-    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output> {
+impl<'input, E> Parsable<'input, [u8], E> for LittleEndianU16Parser {
+    fn parse(&self, parser: &mut Parser<[u8], E>) -> ParseResult<Self::Output<'input>> {
         let bytes = parser.advance_len_exact(2)?;
 
         let bytes = <[u8; 2] as TryFrom<&[u8]>>::try_from(bytes).unwrap();

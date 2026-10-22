@@ -13,8 +13,8 @@ pub struct ExactTokenParser<T>(pub T);
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct ExpectedExactTokenParseError<T>(pub T);
 
-impl<T: Clone> ParsableDefinition<'_> for ExactTokenParser<T> {
-    type Output = T;
+impl<T: Clone> ParsableDefinition for ExactTokenParser<T> {
+    type Output<'input> = T;
 
     type Error = ExpectedExactTokenParseError<T>;
 
@@ -27,7 +27,7 @@ impl<'input, I, E> Parsable<'input, I, E> for ExactTokenParser<I::Token>
 where
     I: Input + ?Sized + 'input,
 {
-    fn parse(&self, parser: &mut Parser<'input, I, E>) -> ParseResult<Self::Output> {
+    fn parse(&self, parser: &mut Parser<'input, I, E>) -> ParseResult<Self::Output<'input>> {
         parser
             .advance_if(|token| *token == self.0)
             .into_parse_result()
