@@ -1,7 +1,8 @@
 use core::num::NonZeroU8;
 
 use crate::{
-    parse_error::{ExpectedNumberParseError, NumericExpectation},
+    errors::number::ExpectedNumberParseError,
+    numeric_expectation::NumericExpectation,
     parser::Parser,
     parsers::numeric::u8::U8Parser,
     results::ParseResult,

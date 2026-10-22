@@ -12,10 +12,7 @@ use crate::{
 pub mod position;
 
 #[derive(Debug)]
-pub struct Parser<'input, I, E>
-where
-    I: Input + ?Sized + 'input,
-{
+pub struct Parser<'input, I: ?Sized, E> {
     pub input: &'input I,
     pub position: ParserPosition,
     errors: Vec<Spanned<E>>,

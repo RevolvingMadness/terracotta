@@ -1,7 +1,9 @@
 use core::num::NonZeroU32;
 
 use crate::{
-    parse_error::{Endianness, ExpectedNumberParseError, NumericExpectation},
+    endianness::Endianness,
+    errors::number::ExpectedNumberParseError,
+    numeric_expectation::NumericExpectation,
     parser::Parser,
     parsers::numeric::little_endian::u32::LittleEndianU32Parser,
     results::ParseResult,

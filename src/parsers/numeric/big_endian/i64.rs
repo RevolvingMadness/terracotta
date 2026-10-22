@@ -1,5 +1,7 @@
 use crate::{
-    parse_error::{Endianness, ExpectedNumberParseError, NumericExpectation},
+    endianness::Endianness,
+    errors::number::ExpectedNumberParseError,
+    numeric_expectation::NumericExpectation,
     parser::Parser,
     results::ParseResult,
     traits::{parsable::Parsable, parsable_definition::ParsableDefinition},

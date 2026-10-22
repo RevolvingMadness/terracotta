@@ -1,8 +1,8 @@
 use alloc::vec::Vec;
 
 use crate::{
+    errors::end_of_input::ExpectedEndOfInputParseError,
     input::Input,
-    parse_error::ExpectedEndOfInputParseError,
     parser::Parser,
     spanned::Spanned,
     traits::{

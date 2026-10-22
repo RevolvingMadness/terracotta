@@ -1,7 +1,9 @@
 use core::num::NonZeroU64;
 
 use crate::{
-    parse_error::{Endianness, ExpectedNumberParseError, NumericExpectation},
+    endianness::Endianness,
+    errors::number::ExpectedNumberParseError,
+    numeric_expectation::NumericExpectation,
     parser::Parser,
     parsers::numeric::big_endian::u64::BigEndianU64Parser,
     results::ParseResult,

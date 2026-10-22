@@ -1,7 +1,9 @@
 use core::num::NonZeroI16;
 
 use crate::{
-    parse_error::{Endianness, ExpectedNumberParseError, NumericExpectation},
+    endianness::Endianness,
+    errors::number::ExpectedNumberParseError,
+    numeric_expectation::NumericExpectation,
     parser::Parser,
     parsers::numeric::big_endian::i16::BigEndianI16Parser,
     results::ParseResult,

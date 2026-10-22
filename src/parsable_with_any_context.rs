@@ -1,5 +1,3 @@
-use core::marker::PhantomData;
-
 use crate::{
     input::Input,
     parser::Parser,
@@ -11,16 +9,13 @@ use crate::{
 };
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
-pub struct ParsableWithAnyContext<'input, I: Input + ?Sized + 'input, E, P: Parsable<'input, I, E>>
-{
-    _phantom_data: PhantomData<(&'input I, E)>,
+pub struct ParsableWithAnyContext<P> {
     parsable: P,
 }
 
-impl<'input, I, E, P> ParsableDefinition<'input> for ParsableWithAnyContext<'input, I, E, P>
+impl<'input, P> ParsableDefinition<'input> for ParsableWithAnyContext<P>
 where
-    I: Input + ?Sized + 'input,
-    P: Parsable<'input, I, E>,
+    P: ParsableDefinition<'input>,
 {
     type Output = P::Output;
 
@@ -32,7 +27,7 @@ where
     }
 }
 
-impl<'input, I, E, P> Parsable<'input, I, E> for ParsableWithAnyContext<'input, I, E, P>
+impl<'input, I, E, P> Parsable<'input, I, E> for ParsableWithAnyContext<P>
 where
     I: Input + ?Sized + 'input,
     P: Parsable<'input, I, E>,
@@ -44,7 +39,7 @@ where
 }
 
 impl<'input, I, E, P, Context> ParsableWithContext<'input, I, E, Context>
-    for ParsableWithAnyContext<'input, I, E, P>
+    for ParsableWithAnyContext<P>
 where
     I: Input + ?Sized + 'input,
     P: Parsable<'input, I, E>,
@@ -59,16 +54,11 @@ where
     }
 }
 
-impl<'input, I: Input + ?Sized + 'input, E, P: Parsable<'input, I, E>>
-    ParsableWithAnyContext<'input, I, E, P>
-{
+impl<P> ParsableWithAnyContext<P> {
     #[inline]
     #[must_use]
     pub const fn new(parsable: P) -> Self {
-        Self {
-            _phantom_data: PhantomData,
-            parsable,
-        }
+        Self { parsable }
     }
 }
 
@@ -78,7 +68,7 @@ where
     P: Parsable<'input, I, E>,
 {
     #[must_use]
-    fn parsable_with_any_context(self) -> ParsableWithAnyContext<'input, I, E, P>;
+    fn parsable_with_any_context(self) -> ParsableWithAnyContext<P>;
 }
 
 impl<'input, I, E, P> ParsableWithAnyContextParsableExt<'input, I, E, P> for P
@@ -87,7 +77,7 @@ where
     P: Parsable<'input, I, E>,
 {
     #[inline]
-    fn parsable_with_any_context(self) -> ParsableWithAnyContext<'input, I, E, P> {
+    fn parsable_with_any_context(self) -> ParsableWithAnyContext<P> {
         ParsableWithAnyContext::new(self)
     }
 }
