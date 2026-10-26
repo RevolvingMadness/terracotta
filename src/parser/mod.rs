@@ -4,7 +4,7 @@ use crate::{
     failures::{ParseFailure, hard::HardParseFailure},
     input::{Input, token::Token},
     parser::position::ParserPosition,
-    results::{ParseResult, option::OptionTExt},
+    results::ParseResult,
     span::Span,
     spanned::{Spanned, SpannedExt},
 };
@@ -54,11 +54,6 @@ where
         let end = start.advanced_unchecked(character_len);
 
         self.add_error_with_span(start..end, error)
-    }
-
-    #[inline]
-    pub fn add_error_result<E2: Into<E>, T>(&mut self, error: E2) -> ParseResult<T> {
-        Err(ParseFailure::Hard(self.add_error(error)))
     }
 
     #[inline]
@@ -127,8 +122,10 @@ where
         self.input.peek(self.position)
     }
 
-    pub fn peek_len(&self, len: usize) -> ParseResult<I::Token> {
-        self.input.peek_len(self.position, len).into_parse_result()
+    #[inline]
+    #[must_use]
+    pub fn peek_len(&self, len: usize) -> Option<I::Token> {
+        self.input.peek_len(self.position, len)
     }
 
     pub fn advance(&mut self) -> Option<I::Token> {
@@ -192,7 +189,7 @@ where
 
     #[inline]
     #[must_use]
-    pub fn slice_current_to_position(&self, other: ParserPosition) -> &'input I {
+    pub fn slice_to(&self, other: ParserPosition) -> &'input I {
         self.slice(self.position.span(other))
     }
 

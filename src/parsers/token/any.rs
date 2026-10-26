@@ -7,6 +7,7 @@ use crate::{
 
 pub struct AnyTokenParser;
 
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ExpectedAnyTokenParseError;
 
 impl ParsableDefinition for AnyTokenParser {

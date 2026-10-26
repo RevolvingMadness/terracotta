@@ -8,12 +8,12 @@ use crate::{
 };
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct ExactTokenParser<T>(pub T);
+pub struct TokenParser<T>(pub T);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct ExpectedExactTokenParseError<T>(pub T);
 
-impl<T: Clone> ParsableDefinition for ExactTokenParser<T> {
+impl<T: Clone> ParsableDefinition for TokenParser<T> {
     type Output<'input, I: Input + ?Sized + 'input> = T;
 
     type Error = ExpectedExactTokenParseError<T>;
@@ -23,7 +23,7 @@ impl<T: Clone> ParsableDefinition for ExactTokenParser<T> {
     }
 }
 
-impl<'input, I, E> Parsable<'input, I, E> for ExactTokenParser<I::Token>
+impl<'input, I, E> Parsable<'input, I, E> for TokenParser<I::Token>
 where
     I: Input + ?Sized + 'input,
 {

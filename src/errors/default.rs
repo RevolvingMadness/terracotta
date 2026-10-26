@@ -3,7 +3,7 @@ use core::fmt::{self, Display, Formatter};
 use alloc::string::String;
 
 use crate::{
-    errors::{end_of_input::ExpectedEndOfInputParseError, number::ExpectedNumberParseError},
+    errors::number::ExpectedNumberParseError,
     numeric_expectation::NumericExpectation,
     parsers::{
         str::ExpectedStringParseError,
@@ -13,7 +13,6 @@ use crate::{
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum DefaultParseError<T> {
-    ExpectedEndOfInput,
     ExpectedString(String),
     ExpectedAnyToken,
     ExpectedExactToken(T),
@@ -24,19 +23,12 @@ pub enum DefaultParseError<T> {
 impl<T: Display> Display for DefaultParseError<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            Self::ExpectedEndOfInput => write!(f, "expected end of input"),
             Self::ExpectedString(string) => write!(f, r#"expected "{}""#, string),
             Self::ExpectedAnyToken => write!(f, "expected any character"),
             Self::ExpectedExactToken(character) => write!(f, "expected '{}'", character),
             Self::Expected(expectation) => write!(f, "expected {}", expectation),
             Self::ExpectedNumber(expectation) => write!(f, "expected a {}", expectation),
         }
-    }
-}
-
-impl<T> From<ExpectedEndOfInputParseError> for DefaultParseError<T> {
-    fn from(_: ExpectedEndOfInputParseError) -> Self {
-        Self::ExpectedEndOfInput
     }
 }
 
